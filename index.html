@@ -1,0 +1,2952 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aha! Mystery Architecture v1.2</title>
+    <meta name="description" content="Initialize Gemini with 3 sequential prompts to establish custom context, then engage in interactive dialogue.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <!-- MarkedJS for Markdown Rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="API_Key.js"></script>
+    <style>
+        :root {
+            --bg-gradient-start: #0a0f1d;
+            --bg-gradient-end: #070a13;
+            --card-bg: rgba(15, 22, 42, 0.65);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --card-border-glow: rgba(124, 58, 237, 0.15);
+            
+            --primary-gradient: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+            --primary-color: #7c3aed;
+            --primary-hover: #6d28d9;
+            --primary-glow: rgba(124, 58, 237, 0.4);
+            
+            --secondary-gradient: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+            --secondary-color: #06b6d4;
+            
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --accent-warning: #f59e0b;
+            
+            --chat-bubble-user: rgba(124, 58, 237, 0.15);
+            --chat-bubble-model: rgba(30, 41, 59, 0.7);
+            
+            --transition-speed: 0.3s;
+            --font-display: 'Plus Jakarta Sans', sans-serif;
+            --font-body: 'Outfit', sans-serif;
+            --font-mono: 'Fira Code', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: radial-gradient(circle at 50% 0%, rgba(124, 58, 237, 0.12) 0%, transparent 50%), 
+                        linear-gradient(to bottom, var(--bg-gradient-start), var(--bg-gradient-end));
+            background-color: var(--bg-gradient-start);
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulseGlow {
+            0% { box-shadow: 0 0 15px rgba(124, 58, 237, 0.2); }
+            50% { box-shadow: 0 0 25px rgba(124, 58, 237, 0.4); }
+            100% { box-shadow: 0 0 15px rgba(124, 58, 237, 0.2); }
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        @keyframes dotPulse {
+            0%, 100% { transform: scale(0.6); opacity: 0.4; }
+            50% { transform: scale(1.2); opacity: 1; }
+        }
+
+        /* Container & Grid layout */
+        header {
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--card-border);
+            backdrop-filter: blur(10px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(10, 15, 29, 0.7);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 1.35rem;
+            background: linear-gradient(135deg, #a78bfa 0%, #06b6d4 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo svg {
+            width: 28px;
+            height: 28px;
+            fill: none;
+            stroke: url(#logo-grad);
+            stroke-width: 2.2;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .main-container {
+            max-width: 1100px;
+            width: 100%;
+            margin: 2rem auto;
+            padding: 0 1.5rem;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        /* Card Styles */
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 2.5rem;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+            animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--primary-gradient);
+            opacity: 0.8;
+        }
+
+        /* Typography */
+        h1 {
+            font-family: var(--font-display);
+            font-size: 2.25rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            letter-spacing: -0.02em;
+        }
+
+        h2 {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        p.subtitle {
+            color: var(--text-secondary);
+            font-size: 1.05rem;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+        }
+
+        label {
+            display: block;
+            font-family: var(--font-display);
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Forms / Inputs */
+        .input-group {
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        .input-control {
+            width: 100%;
+            padding: 0.9rem 1.2rem;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1.5px solid var(--card-border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            font-size: 1rem;
+            transition: all var(--transition-speed) ease;
+        }
+
+        .input-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px var(--primary-glow);
+            background: rgba(15, 23, 42, 0.95);
+        }
+
+        textarea.input-control {
+            resize: vertical;
+            min-height: 90px;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.6rem;
+            padding: 0.85rem 1.75rem;
+            font-family: var(--font-display);
+            font-weight: 600;
+            font-size: 0.95rem;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            transition: all var(--transition-speed) cubic-bezier(0.16, 1, 0.3, 1);
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--primary-gradient);
+            color: white;
+            box-shadow: 0 4px 15px rgba(124, 58, 237, 0.25);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(124, 58, 237, 0.4);
+            filter: brightness(1.1);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: rgba(30, 41, 59, 0.8);
+            color: var(--text-primary);
+            border: 1px solid var(--card-border);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(30, 41, 59, 1);
+            border-color: var(--text-secondary);
+            transform: translateY(-1px);
+        }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.15);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-danger:hover {
+            background: rgba(239, 68, 68, 0.3);
+            border-color: var(--accent-red);
+            color: white;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        /* Badges & Utilities */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.6rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border-radius: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .badge-purple {
+            background: rgba(124, 58, 237, 0.15);
+            color: #c084fc;
+            border: 1px solid rgba(124, 58, 237, 0.3);
+        }
+
+        .dropdown-control {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--card-border);
+            color: var(--text-primary);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-family: var(--font-body);
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: border-color var(--transition-speed);
+        }
+
+        .dropdown-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        /* Screens Management */
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        /* Screen 1: API Key */
+        .api-card {
+            max-width: 550px;
+            margin: 0 auto;
+        }
+
+        .api-description {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-top: 0.75rem;
+            line-height: 1.5;
+        }
+
+        .api-description a {
+            color: var(--secondary-color);
+            text-decoration: none;
+        }
+
+        .api-description a:hover {
+            text-decoration: underline;
+        }
+
+        /* Screen 2: Prompts Setup */
+        .prompt-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+            align-items: start;
+        }
+
+        @media (max-width: 850px) {
+            .prompt-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .preset-section {
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
+            padding: 1.5rem;
+        }
+
+        .presets-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        .preset-btn {
+            background: rgba(30, 41, 59, 0.4);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            padding: 1rem;
+            text-align: left;
+            cursor: pointer;
+            transition: all var(--transition-speed);
+            color: var(--text-primary);
+        }
+
+        .preset-btn:hover {
+            background: rgba(124, 58, 237, 0.1);
+            border-color: rgba(124, 58, 237, 0.4);
+            transform: translateX(4px);
+        }
+
+        .preset-title {
+            font-family: var(--font-display);
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .preset-desc {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        .prompts-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .prompt-block {
+            position: relative;
+        }
+
+        .prompt-number {
+            position: absolute;
+            left: -15px;
+            top: -15px;
+            background: var(--primary-gradient);
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            font-weight: 700;
+            box-shadow: 0 4px 10px rgba(124, 58, 237, 0.3);
+            border: 2px solid var(--bg-gradient-start);
+        }
+
+        /* Loading / Initialization Screen */
+        .init-card {
+            max-width: 650px;
+            margin: 0 auto;
+            text-align: center;
+            padding: 3rem;
+        }
+
+        .spinner-container {
+            margin: 2.5rem 0;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .spinner {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 3px solid rgba(124, 58, 237, 0.1);
+            border-top-color: var(--primary-color);
+            animation: spin 1s cubic-bezier(0.55, 0.085, 0.68, 0.53) infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .spinner-glow {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            filter: blur(25px);
+            opacity: 0.25;
+            animation: pulseGlow 2s infinite;
+        }
+
+        .steps-progress {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            max-width: 450px;
+            margin: 2rem auto 0 auto;
+            text-align: left;
+        }
+
+        .step-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid var(--card-border);
+            transition: all var(--transition-speed);
+        }
+
+        .step-item.active {
+            border-color: rgba(124, 58, 237, 0.5);
+            background: rgba(124, 58, 237, 0.05);
+        }
+
+        .step-item.completed {
+            border-color: rgba(16, 185, 129, 0.3);
+            background: rgba(16, 185, 129, 0.05);
+        }
+
+        .step-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: rgba(30, 41, 59, 0.6);
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+
+        .step-item.active .step-icon {
+            background: var(--primary-color);
+            color: white;
+            box-shadow: 0 0 10px rgba(124, 58, 237, 0.5);
+        }
+
+        .step-item.completed .step-icon {
+            background: var(--accent-green);
+            color: white;
+        }
+
+        .step-text {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .step-item.active .step-text {
+            color: var(--text-primary);
+        }
+
+        .step-item.completed .step-text {
+            color: #a7f3d0;
+            text-decoration: line-through;
+            opacity: 0.8;
+        }
+
+        /* Screen 3: Dialogue (Chat) Interface */
+        .dialogue-wrapper {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 1.5rem;
+            height: calc(100vh - 180px);
+            min-height: 550px;
+        }
+
+        @media (max-width: 900px) {
+            .dialogue-wrapper {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+            .sidebar-card {
+                display: none; /* Hide sidebar on mobile, can make toggleable */
+            }
+        }
+
+        .sidebar-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            height: 100%;
+            overflow-y: auto;
+        }
+
+        .sidebar-card::before {
+            display: none; /* remove gradient bar for sidebar */
+        }
+
+        .chat-main-card {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .chat-main-card::before {
+            height: 4px;
+        }
+
+        .chat-header {
+            padding: 1.25rem 2rem;
+            border-bottom: 1px solid var(--card-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(15, 22, 42, 0.4);
+        }
+
+        .chat-messages {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            scroll-behavior: smooth;
+        }
+
+        /* Chat Message Styling */
+        .message-row {
+            display: flex;
+            width: 100%;
+            animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .message-row.user {
+            justify-content: flex-end;
+        }
+
+        .message-row.model {
+            justify-content: flex-start;
+        }
+
+        .message-bubble {
+            max-width: 80%;
+            padding: 1rem 1.4rem;
+            border-radius: 16px;
+            line-height: 1.6;
+            font-size: 0.98rem;
+            position: relative;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+        }
+
+        @media (max-width: 600px) {
+            .message-bubble {
+                max-width: 90%;
+            }
+        }
+
+        .message-row.user .message-bubble {
+            background: var(--chat-bubble-user);
+            border: 1px solid rgba(124, 58, 237, 0.25);
+            border-bottom-right-radius: 4px;
+            color: var(--text-primary);
+        }
+
+        .message-row.model .message-bubble {
+            background: var(--chat-bubble-model);
+            border: 1px solid var(--card-border);
+            border-bottom-left-radius: 4px;
+            color: var(--text-primary);
+            width: 700px;
+            max-width: 100%;
+        }
+
+        .message-info {
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 0.4rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .user .message-info {
+            color: #c084fc;
+            justify-content: flex-end;
+        }
+
+        .model .message-info {
+            color: var(--secondary-color);
+        }
+
+        /* System Context Banner inside Chat */
+        .context-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 1.5rem 0;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            gap: 1rem;
+            width: 100%;
+        }
+
+        .context-divider::before,
+        .context-divider::after {
+            content: '';
+            flex-grow: 1;
+            height: 1px;
+            background: var(--card-border);
+        }
+
+        /* Markdown elements formatting */
+        .message-content p {
+            margin-bottom: 0.75rem;
+        }
+
+        .message-content p:last-child {
+            margin-bottom: 0;
+        }
+
+        .message-content ul, 
+        .message-content ol {
+            margin-left: 1.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .message-content code {
+            font-family: var(--font-mono);
+            background: rgba(0, 0, 0, 0.4);
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.85em;
+            color: #f472b6;
+        }
+
+        .message-content pre {
+            background: #090d16 !important;
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            padding: 1rem;
+            overflow-x: auto;
+            margin: 0.75rem 0;
+        }
+
+        .message-content pre code {
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            color: #e2e8f0;
+            font-size: 0.85rem;
+        }
+
+        .message-content blockquote {
+            border-left: 4px solid var(--primary-color);
+            background: rgba(124, 58, 237, 0.05);
+            padding: 0.5rem 1rem;
+            margin: 0.75rem 0;
+            border-radius: 4px;
+            color: var(--text-secondary);
+        }
+
+        .message-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0.75rem 0;
+        }
+
+        .message-content th, 
+        .message-content td {
+            border: 1px solid var(--card-border);
+            padding: 0.5rem 0.75rem;
+            text-align: left;
+        }
+
+        .message-content th {
+            background: rgba(15, 23, 42, 0.5);
+        }
+
+        /* Typing indicator styling */
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 0.25rem 0.5rem;
+        }
+
+        .typing-dot {
+            width: 6px;
+            height: 6px;
+            background-color: var(--text-secondary);
+            border-radius: 50%;
+            animation: dotPulse 1.4s infinite ease-in-out;
+        }
+
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        /* Chat input container */
+        .chat-input-bar {
+            padding: 1.5rem 2rem;
+            border-top: 1px solid var(--card-border);
+            background: rgba(10, 15, 29, 0.9);
+            display: flex;
+            gap: 1rem;
+            align-items: flex-end;
+        }
+
+        .textarea-wrapper {
+            flex-grow: 1;
+            position: relative;
+        }
+
+        .chat-textarea {
+            width: 100%;
+            background: rgba(15, 23, 42, 0.9);
+            border: 1.5px solid var(--card-border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            font-size: 1rem;
+            padding: 0.85rem 1rem;
+            padding-right: 3rem;
+            resize: none;
+            max-height: 150px;
+            min-height: 48px;
+            height: 48px;
+            transition: all var(--transition-speed) ease;
+            line-height: 1.4;
+        }
+
+        .chat-textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px var(--primary-glow);
+        }
+
+        .chat-send-btn {
+            position: absolute;
+            right: 10px;
+            bottom: 8px;
+            background: var(--primary-gradient);
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all var(--transition-speed);
+            color: white;
+        }
+
+        .chat-send-btn:hover {
+            filter: brightness(1.15);
+            transform: scale(1.05);
+        }
+
+        .chat-send-btn svg {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+            transform: translateX(1px);
+        }
+
+        /* Sidebar content details */
+        .sidebar-section {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .sidebar-title {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .context-summary-box {
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            padding: 0.85rem;
+            font-size: 0.85rem;
+            line-height: 1.4;
+            color: var(--text-secondary);
+        }
+
+        .context-summary-box strong {
+            color: var(--text-primary);
+            display: block;
+            margin-bottom: 0.25rem;
+        }
+
+        .model-info-footer {
+            margin-top: auto;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        /* Status Toast Alert */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: rgba(15, 22, 42, 0.9);
+            border: 1px solid var(--accent-red);
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: var(--text-primary);
+            z-index: 1000;
+            transform: translateY(150%);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            backdrop-filter: blur(10px);
+        }
+
+        .toast.show {
+            transform: translateY(0);
+        }
+
+        .toast-icon {
+            color: var(--accent-red);
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .toast-success {
+            border-color: var(--accent-green);
+        }
+
+        .toast-success .toast-icon {
+            color: var(--accent-green);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(10, 15, 29, 0.3);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Custom Modals */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(5px);
+            display: none; justify-content: center; align-items: center;
+            z-index: 1000; opacity: 0; transition: opacity var(--transition-speed);
+        }
+        .modal-overlay.active { display: flex; opacity: 1; }
+        .modal-content {
+            background: var(--card-bg); border: 1px solid var(--card-border);
+            border-radius: 16px; padding: 2rem; max-width: 500px; width: 90%;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+        .modal-header { font-family: var(--font-display); font-size: 1.5rem; font-weight: 600; margin-bottom: 1.5rem; }
+        .modal-body .input-group { margin-bottom: 1rem; }
+        .modal-footer { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 2rem; }
+    </style>
+</head>
+<body>
+
+    <!-- SVG Logo Gradient Definition -->
+    <svg style="position: absolute; width: 0; height: 0;" aria-hidden="true" focusable="false">
+        <defs>
+            <linearGradient id="logo-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#a78bfa" />
+                <stop offset="100%" stop-color="#06b6d4" />
+            </linearGradient>
+        </defs>
+    </svg>
+
+    <!-- Header bar -->
+    <header>
+        <a href="AMA_Help.pdf" target="_blank" style="position: absolute; left: 50%; transform: translateX(-50%); color: #06b6d4; font-weight: bold; text-decoration: none; font-size: 1.1rem; padding: 5px 15px; border-radius: 8px; background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(255, 255, 255, 0.08); transition: all 0.3s; z-index: 101;" onmouseover="this.style.background='rgba(6, 182, 212, 0.2)'" onmouseout="this.style.background='rgba(15, 23, 42, 0.5)'">Help</a>
+        <div class="logo">
+            <svg viewBox="0 0 24 24">
+                <path d="M12 2L2 22h20L12 2zm0 4.3L18.7 19H5.3L12 6.3z" stroke="currentColor"/>
+                <path d="M12 9l-4 7h8l-4-7z" fill="currentColor" opacity="0.3"/>
+            </svg>
+            <span>Aha! Mystery Architecture v1.2</span>
+        </div>
+        <div class="header-actions">
+            <span id="model-indicator" class="badge badge-purple" style="display: none;">gemini-3.1-pro-preview</span>
+            <select id="global-model-select" class="dropdown-control">
+                <option value="gemini-3.1-pro-preview">Gemini 3.1 Pro (Preview)</option>
+                <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+                <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+            </select>
+            <button id="logout-btn" class="btn btn-secondary" style="padding: 0.5rem 0.75rem; font-size: 0.8rem; display: none;">Clear Key</button>
+        </div>
+    </header>
+
+    <div class="main-container">
+        
+        <!-- SCREEN 1: API Key Setup -->
+        <section id="api-key-screen" class="screen active">
+            <div class="glass-card api-card">
+                <h1>Welcome Architect</h1>
+                <p class="subtitle">To begin, enter your Gemini API Key. It is stored securely in your browser's local storage and used directly to communicate with Gemini.</p>
+                
+                <div class="input-group">
+                    <label for="api-key-input">Gemini API Key</label>
+                    <input type="password" id="api-key-input" class="input-control" placeholder="AIzaSy...">
+                    <div class="api-description">
+                        Don't have an API Key? Get one for free from the <a href="https://aistudio.google.com/" target="_blank" rel="noopener noreferrer">Google AI Studio</a>.
+                    </div>
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; margin-top: 2rem;">
+                    <button id="save-api-key-btn" class="btn btn-primary">
+                        <span>Initialize Setup</span>
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCREEN 2: Prompts Setup -->
+        <section id="prompts-screen" class="screen">
+            <div class="glass-card" style="padding: 2.2rem; max-width: 800px; margin: 0 auto;">
+                <h2>Define Your Situation</h2>
+                <p class="subtitle" style="margin-bottom: 1.5rem;">Please describe the situation you would like to develop a better understanding of.</p>
+                <div id="init-error-banner" style="display: none; background: rgba(239, 68, 68, 0.15); border: 1px solid var(--accent-red); color: #fca5a5; padding: 1rem; border-radius: 12px; margin-bottom: 1.5rem; font-size: 0.9rem; line-height: 1.4; text-align: left;"></div>
+                
+                <div class="prompts-container">
+                    <div class="prompt-block">
+                        <div class="input-group" style="margin-bottom: 0;">
+                            <label for="situation-input">Situation</label>
+                            <textarea id="situation-input" class="input-control" rows="15" placeholder="Describe the situation here..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; margin-top: 2rem; align-items: flex-start;">
+                    <button id="back-to-api-btn" class="btn btn-secondary">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                        <span>Back</span>
+                    </button>
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem;">
+                        <input type="file" id="file-upload-input" multiple accept=".pdf, image/*, text/*, .csv, .json, .md" style="display: none;">
+                        <button id="upload-file-btn" class="btn btn-secondary">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+                            <span>Upload File</span>
+                        </button>
+                        <div id="uploaded-files-list" style="font-size: 0.8rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 0.25rem;"></div>
+                    </div>
+                    <button id="generate-situations-btn" class="btn btn-secondary" style="border-color: var(--secondary-color); color: var(--secondary-color);">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                        <span>Generate Situations</span>
+                    </button>
+                    <button id="start-init-btn" class="btn btn-primary">
+                        <span>Launch Dialogue</span>
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCREEN 3: Initializing -->
+        <section id="init-screen" class="screen">
+            <div class="glass-card init-card">
+                <h1>Constructing Dialogue State</h1>
+                <p class="subtitle">Establishing context by feeding the 3 setup prompts sequentially to Gemini. This links responses and builds memory.</p>
+                
+                <div class="spinner-container">
+                    <div class="spinner-glow"></div>
+                    <div class="spinner"></div>
+                </div>
+
+                <div class="steps-progress">
+                    <div id="step-1" class="step-item">
+                        <div class="step-icon">1</div>
+                        <div class="step-text">Sending Prompt 1 (Aha! Mystery)...</div>
+                    </div>
+                    <div id="step-2" class="step-item">
+                        <div class="step-icon">2</div>
+                        <div class="step-text">Sending Prompt 2 (Assess Stratum)...</div>
+                    </div>
+                    <div id="step-3" class="step-item">
+                        <div class="step-icon">3</div>
+                        <div class="step-text">Sending Prompt 3 (Detectives)...</div>
+                    </div>
+                    <div id="step-4" class="step-item">
+                        <div class="step-icon">4</div>
+                        <div class="step-text">Sending Prompt 4 (Situation)...</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCREEN 4: Dialogue Chat Interface -->
+        <section id="dialogue-screen" class="screen">
+            <div class="dialogue-wrapper">
+                <!-- Sidebar Controls -->
+                <aside class="sidebar-card">
+
+                    <div class="sidebar-section">
+                        <span class="sidebar-title">Situation</span>
+                        <div class="context-summary-box" style="height: 225px; overflow-y: auto;">
+                            <span id="summary-situation" style="font-size: 0.85rem; white-space: pre-wrap;">-</span>
+                        </div>
+                    </div>
+
+                    <div class="sidebar-section" style="margin-top: auto; display: flex; flex-direction: column; gap: 0.5rem;">
+                        <button id="show-map-btn" class="btn btn-secondary" style="padding: 0.7rem; font-size: 0.85rem;" disabled>
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
+                            <span>Show Map</span>
+                        </button>
+                        <button id="loop-order-btn" class="btn btn-secondary" style="padding: 0.7rem; font-size: 0.85rem;" disabled>
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89M9 11l3 3L22 4"/></svg>
+                            <span>Loop Order</span>
+                        </button>
+                        <button id="roa-assessment-btn" class="btn btn-secondary" style="padding: 0.7rem; font-size: 0.85rem;" disabled>
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            <span>Assessment</span>
+                        </button>
+                        <button id="create-story-btn" class="btn btn-secondary" style="padding: 0.7rem; font-size: 0.85rem;" disabled>
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                            <span>Create Story</span>
+                        </button>
+                        <button id="perspectives-btn" class="btn btn-secondary" style="padding: 0.7rem; font-size: 0.85rem;" disabled>
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                            <span>Perspectives</span>
+                        </button>
+                        <button id="donate-btn" class="btn btn-secondary" style="padding: 0.7rem; font-size: 0.85rem;">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+                            <span>Enjoying the insights? Support the architecture and get future updates.</span>
+                        </button>
+                        <button id="export-btn" class="btn btn-secondary" style="padding: 0.7rem; font-size: 0.85rem;">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                            <span>Export Conversation</span>
+                        </button>
+                        <button id="reset-btn" class="btn btn-danger" style="padding: 0.7rem; font-size: 0.85rem;">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            <span>Reset Architecture</span>
+                        </button>
+                    </div>
+
+                    <div class="model-info-footer">
+                        Gemini API client-side execution.
+                    </div>
+                </aside>
+
+                <!-- Chat Main Window -->
+                <main class="glass-card chat-main-card">
+                    <div class="chat-header">
+                        <div>
+                            <h2 style="margin-bottom: 0.1rem; font-size: 1.2rem;">Dialogue Session</h2>
+                            <p style="font-size: 0.8rem; color: var(--text-secondary);">Interactive conversation based on custom guidelines</p>
+                        </div>
+                        <span id="connection-badge" class="badge badge-purple" style="background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.3); color: #34d399;">Active Context</span>
+                    </div>
+
+                    <!-- Chat Message Area -->
+                    <div id="chat-messages" class="chat-messages">
+                        <!-- Initialization Messages will be dynamically rendered here -->
+                    </div>
+
+                    <!-- Input Area -->
+                    <div class="chat-input-bar">
+                        <div class="textarea-wrapper">
+                            <textarea id="chat-input-textarea" class="chat-textarea" placeholder="Type a message... (Enter to send, Shift+Enter for new line)"></textarea>
+                            <button id="chat-send-btn" class="chat-send-btn" title="Send message">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </section>
+    </div>
+
+    <footer style="text-align: center; padding: 1rem; color: var(--text-muted); font-size: 0.85rem;">
+        © 2024–2026 Systems Thinking World Inc. All rights reserved.
+    </footer>
+
+    <!-- Toast Alert Notification -->
+    <div id="toast-alert" class="toast">
+        <span class="toast-icon">✕</span>
+        <span id="toast-message">Error processing request.</span>
+    </div>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // Embedded default prompt contents as fallbacks
+        const EMBEDDED_CONTEXTUAL_ESSENCE = `[INSTRUCTIONS START]
+Contextual Essence v1.1
+Act as my Relationship Map Architect thought partner. 
+
+We are preparing to transition this model into a clean chat to run the forensic narrative engine. 
+
+Review our entire dialogue to this point and extract a 2–3 sentence "Contextual Essence" summary. Your output must meet these exact criteria: 
+
+1. Concrete Reality: It must capture the sharp, localized friction point, real-world stakes, or unique vocabulary that anchors this specific situation. 
+2. Narrative Fuel: It must give the story prompt the exact "raw material" needed to construct a compelling, tangible opening hook, avoiding broad abstractions. 
+3. No Noise: Do not include summary details of the JSON structure itself; focus entirely on the human and operational reality of the problem. 
+
+Provide only the 2–3 sentence summary as your output.
+[INSTRUCTIONS END]`;
+
+        const EMBEDDED_AHA_STORY = `[INSTRUCTIONS START]]
+Aha! Story v1.3 - The Forensic Inquiry Method
+
+Goal: Develop a gripping, insight-driven narrative that functions as an investigative journey, explicitly highlighting how a system is the result of its interactions by tracing invisible relational flows and hidden structural frictions.
+1. Define the Crime Scene (The Setup)
+	* The Concrete Hook: Start with a sharp, tangible, real-world object or localized friction point (e.g., a single drop of glue, a specific boardroom rule, a bottleneck at a workbench). Avoid starting with broad, abstract generalizations.
+	* The Load-Bearing Delusion: Explicitly name the widespread, superficial explanation that everyone accepts, and immediately expose it as a systemic illusion or a classic case of Shifting the Burden.
+	* The Relational Reality: Introduce the foundational axiom that there are no static objects—only processes and temporary bundles of relationships and energy flows. Show how the current environment is intentionally frozen in a state of deliberate gridlock to optimize upstream velocity at the expense of downstream exhaustion.
+2. The Investigative Mechanism (The "And?" Progression)
+	* The Core Paradox: Center the narrative around a structural contradiction (e.g., the Paradox of Assembly). Show how optimizing a system solely for the cheapness of its initial creation generates an exponential debt of friction at the end of its lifecycle.
+	* The Unfolding Discovery: Do not summarize a solved mystery or report on a past movement. Use the investigative mechanism of And? to pull the reader line-by-line through the perimeter of the problem. Let them experience the tension of the unrevealed connection with you before delivering the revelation.
+	* Accessible Precision: Maintain absolute conceptual integrity (using your core systems principles), but strip away academic prose dialects or overly stylized metaphors that create an elite barrier. The vocabulary must make the reader feel like a clever detective uncovering a secret, not a student sitting through a lecture.
+3. The Structural Leverage Point
+	* The Archetypal Pattern: Personify the structural relationship (the system archetype) as a predictable mechanism rather than an external, personalized enemy. Show that the behavior is the logical output of the system's design.
+	* Stakeholder Resonance:
+		* The Visionaries: Illuminate the profound beauty of making these invisible connections transparent.
+		* The Pragmatists: Focus on the immediate utility of a new architecture or method that reduces friction and attacks the root cause rather than treating the symptoms.
+	* Trial and Learning: Close the narrative arc by anchoring the solution in a mindset of continuous Trial and Learning, offering a realization of how shared understanding permanently alters the flow of energy and systemic design.
+4. Technical Requirements
+	* The Narrative Flow: Output the story as a single, uninterrupted prose narrative, though please break it into paragraphs.
+	* No Labels: Do not use headings, bullet points, or bold text within the story itself. It must read as a seamless, high-scannability narrative.
+	* The Forensic Appendix: Provide a separate section titled "Systemic Reflection & Stakeholder Notes" containing the crisp, technical analysis of First Principles, Core Wisdom, and Leverage Points.
+	* Title: A sharp, evocative, or disruptive title that hooks a digital reader (e.g., The Case of the... or The Paradox of...).
+	* Tone: Incisive, investigative, clear, and profound—"Food for Thought" designed for high digital engagement.
+[INSTRUCTIONS END]
+[USER CONCRETE HOOK]
+Use the uploaded JSON and the Contextual Essence as input.
+[USER CONCRETE HOOK END]`;
+
+        const EMBEDDED_LITERATURE_SEED = `[INSTRUCTIONS START]
+Literature Seed Generator v1.1
+Role: Act as my Relationship Map Architect thought partner.
+
+We are preparing to transition our mapped dynamics into a clean chat to query for "Unique Perspectives." Review our entire dialogue and the final relationship map to extract the exact search parameters needed to surface real-world literature, economic analysis, and expert perspectives. 
+
+Your output must strictly follow this 3-part structure:
+
+1. The Original Premise: Summarize the core situation and the foundational conflict in 2-3 sentences.
+2. The Core Systemic Dynamic: Provide a plain-English, 3-4 sentence explanation of the primary traps or loops we uncovered. Focus on the actual physical, financial, or psychological mechanics. Do NOT use relationship map IDs, JSON formatting, or internal tool names.
+3. Industry Search Hooks: Provide a comma-separated list of 6-8 standard academic, industry, or economic terms that researchers actually use when publishing papers on these exact dynamics.
+
+Provide only the 3-part summary as your output.
+[INSTRUCTIONS END]`;
+
+        const EMBEDDED_UNIQUE_PERSPECTIVES = `[Instructions Start]
+Unique Perspectives v1.1
+
+Are there people who have published unique perspectives in this area? If there are, please tell me who they are and what their unique perspectives were.
+[Instructions End]
+[USER INPUT]
+Use the uploaded JSON structure and Literature Seed as input.
+[USER INPUT END]`;
+
+        const EMBEDDED_ROA_ASSESSMENT = `# Role & Purpose
+Act as an expert auditor in Elliott Jaques’ Requisite Organization (RO) framework and cognitive complexity assessment. Your task is to evaluate a dialogue session between an AI guide and a user, specifically focusing on assessing the user's operational Stratum based on their inputs, choices, and reasoning during the conversation.
+
+# Input Data for Review
+Please review the complete dialogue history provided by the user below. Pay close attention to:
+1. The user's initial description of the situation.
+2. The user's ability to identify systemic relationships, feedback dynamics, or root causes.
+3. The rationale the user provided when making choices or selecting options presented by the guide.
+
+# Evaluation Protocol
+1. **Locate Initial Situation Assessment:** Identify the Stratum level (Stratum 1 to 10) that was explicitly announced by the model at the very beginning of the dialogue for the situation itself.
+2. **Evaluate User Cognitive Horizon:** Analyze the user's responses throughout the dialogue. Assess their actual "Time Horizon of Discretion" and cognitive complexity (e.g., Are they thinking in terms of immediate task execution, systemic optimization, or long-term strategic development?).
+3. **Determine User Stratum Level:** Assign a definitive Requisite Organization Stratum level to the user based on their active participation and stated reasoning.
+
+# Output Format
+Your output must strictly follow this structure:
+
+### ## Requisite Organization Stratum Comparison Table
+| Assessment Type | Assigned Stratum Level | Time Horizon Focus | Core Description |
+| :--- | :--- | :--- | :--- |
+| **Initial Situation Assessment** | [Insert Situation Stratum, e.g., Stratum III] | [e.g., 1–2 Years] | [Brief description of the scenario's complexity context] |
+| **User Capability Assessment** | [Insert Calculated User Stratum, e.g., Stratum IV] | [e.g., 2–5 Years] | [Brief description of the user's demonstrated cognitive capability] |
+
+---
+
+### ## Assessment Rationale
+Provide a detailed, objective rationale (3–4 paragraphs) justifying your assessment of the user's Stratum level. 
+
+Break your rationale down into these specific observations:
+* **Problem Framing & Concept Mastery:** How effectively did the user grasp the invisible systemic links or relationships? Did they fall back on surface-level symptoms, or did they actively trace underlying loops and structural friction points?
+* **Choice & Decision Logic:** Analyze the user's explicit reasoning when they were asked to justify their choices. What variables, long-term trade-offs, or downstream consequences did they naturally take into consideration?
+* **Stratum Alignment/Misalignment:** Explicitly comment on whether the user's capability matched, fell short of, or exceeded the initial complexity of the situation itself.`;
+
+        // Search backwards in conversation history for the latest JSON map structure
+        function getLatestJsonMap() {
+            for (let i = STATE.history.length - 1; i >= 0; i--) {
+                const turn = STATE.history[i];
+                if (turn.role === 'model') {
+                    const text = turn.parts[0].text;
+                    const mapData = extractMapData(text);
+                    if (mapData) {
+                        return mapData.jsonStr;
+                    }
+                }
+            }
+            return null;
+        }
+
+        // App State
+        const STATE = {
+            apiKey: '',
+            apiTier: null,
+            selectedModel: 'gemini-3.1-pro-preview',
+            currentScreen: 'api-key-screen',
+            prompts: ['', '', '', ''],
+            responses: ['', '', '', ''],
+            history: [], // Chat history formatted for Gemini content payload
+            systemInstruction: null,
+            uploadedFiles: []
+        };
+
+        const PRESETS = {
+            mystery: [
+                `[INSTRUCTIONS START]
+Aha! Mystery - The Architect’s Deep Dive
+
+Role: You are an expert Relationship Map Architect and a friendly, engaging Socratic Guide. Your goal is to lead the user through a lighthearted "Trial & Learning" discovery of the hidden relationships within a complex situation, treating it like an unfolding mystery. Avoid terms like 'balancing loop,' 'reinforcing loop,' 'exogenous variable,' or 'stock and flow' until the user has fully described the behavior in their own words. Instead, use investigative metaphors like 'The Feedback Trap,' 'The Growing Momentum,' or 'The Resource Reservoir.' Assume the user is not familiar with systems thinking, so avoid terms that they might not be familiar with.
+
+Phase 1: The Hidden Blueprint (Internal State - DO NOT REVEAL)
+
+When the user provides a situation, internally define the map using these strict rules:
+	1. Variable Identification (Nodes):
+		* Parsimony: Identify 8-12 nodes necessary to explain the behavior.
+		* Stocks (Accumulations): shape: 'box', Teal (background: '#CCFBF1', border: '#14B8A6').
+		* Flows/Auxiliaries: shape: 'ellipse', Blue (background: '#DBEAFE', border: '#3B82F6').
+		* Exogenous: borderWidth: 2.5 for key external inputs.
+		* Layout: Use a 1000x800 canvas. Center the primary stock near (0,0). Causes to the left (-x), effects to the right (+x).
+		* Node Descriptions: Must define the variable in 2-3 full sentences, ending with the ID (e.g., "[n1]").
+	2. Relationship Definition (Edges):
+		* Polarity & Color: Positive (+) is Blue { color: '#1E40AF' }; Negative (-) is Red { color: '#991B1B' }.
+		* Width: The strength of the edge relationship (2-7) 
+		* Lag: Estimated time of the interaction (None, Seconds, Minutes, Hours, Days, Weeks, Quarters, Years, etc.)
+		* Edge Descriptions: Must explain the causal logic and any associated lag in 2-3 full sentences, ending with the ID (e.g., "[e1]").
+		3. Feedback Loops & Archetypes:
+		* Dominance: Identify 5-8 "Dominant Loops".
+		* Continuous Discovery: Number all loops in a single, continuous sequence (e.g., B1, R2, B3, R4) based on the order of discovery, regardless of whether they are balancing or reinforcing.
+		* Strict Causal Topology Rule: A loop is ONLY valid if it forms a closed, continuous directional circle. You must verify that the target node ('to') of each edge serves as the source node ('from') of the subsequent edge, sequentially completing the circuit back to the origin node. 
+		* Arrow Direction Validation: Double-check the 'from' and 'to' fields of every edge assigned to a loop. If an edge flows against the directional current of the loop, the loop is ill-defined and MUST be rejected or rewritten.
+		* Loop Narratives: Must describe the "story" of the feedback loop and how it influences the system in 2-3 full sentences, ending with the ID (e.g., "[B1]").
+		* Archetypes: Identify underlying structures (e.g., Limits to Growth).
+Phase 2: The Socratic Puzzle (The Interface)
+	* The Persona: You are a curious investigator; do NOT use heavy academic jargon.
+	* The Narrative Start: Immediately after announcing the Stratum level, introduce the situation playfully. Tune your language, complexity, and time-horizon focus to match that assessed Stratum. Ask: "What's the first clue or thread we should pull on?" or present an initial systemic polarity to kick off the case.
+	* Discovery Logic: Wait for the user to deduce a connection. When they guess correctly, celebrate the discovery and silently add it to the JSON State.
+	* Dynamic Expansion: If the user identifies a valid relationship not in your initial blueprint, integrate it into the map permanently.
+	* Challenge Mode: Once a core loop is found, present a "What if?" riddle to test their understanding of the system's resilience.
+	* Choice: If you provide the user with several options, once they pick one, ask if they can help you understand the basis for that choice.
+	* Choice: If you provide the user with several options, once they pick one, ask if they can help you understand the basis for that choice.
+	* Full State Rule: DO NOT output the JSON structure under any circumstances unless the user explicitly types 'Show Full Map'. When the user discovers new nodes or edges, silently update your internal state but do not print the JSON.
+[INSTRUCTIONS END]
+
+[CONTEXT / DATA START]
+
+JSON Schema Structure 
+
+JSON
+{
+  "metadata": {
+    "topic": "Title of the Mystery",
+    "narrative_title": "The Story Label (e.g., The Ceiling of Success)",
+    "situational_essence": "The contextual essence text provided in the prompt",
+    "stratum_level": "The stratum level calculated"
+  },
+  "nodes": [
+    {
+      "id": "n1",
+      "label": "Variable Name",
+      "shape": "box",
+      "color": { "background": "#CCFBF1", "border": "#14B8A6" },
+      "borderWidth": 1,
+      "x": 0,
+      "y": 0,
+      "description": "2-3 sentences. [n1]"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "n1",
+      "to": "n2",
+      "color": { "color": "#1E40AF" },
+      "width": "Width",
+      "label": "Short Explanation\\n+\\nLag: Lag",
+      "description": "2-3 sentences. [e1]"
+    }
+  ],
+  "loops": [
+    {
+      "id": "B1",
+      "name": "Loop Name",
+      "type": "B", 
+      "description": "Story of the loop in 2-3 sentences referencing Node/Edge IDs. [B1]",
+      "nodeIds": ["n1", "n2"],
+      "edgeIds": ["e1", "e2"],
+      "__topology_validation_note": "CRITICAL: 'edgeIds' must trace a continuous, unbroken directional path through 'nodeIds' returning to the start node. Verify that 'from' and 'to' fields on these edges flow in a single, unreversed direction."
+    }
+  ],
+  "archetypes": [
+    {
+      "id": "arch1",
+      "name": "Limits to Growth",
+      "description": "Explanation of the archetype 2-3 sentences.",
+      "nodeIds": ["n1", "n2"],
+      "edgeIds": ["e1", "e2"]
+    }
+  ]
+}
+[CONTEXT / DATA END]
+
+[CONSTRAINTS START]
+Constraints
+	* ID Persistence: Append IDs (e.g., "[n1]") to all descriptions.
+	* Archetype Union: edgeIds MUST be the exact union of all edges from the included loops.
+	* No Spoilers: Never name a loop or archetype until the user discovers its edges.
+	* Complete Output: ONLY when the user explicitly requests the JSON structure (e.g. 'Show Full Map'), you MUST output the entire JSON structure, including all discovered nodes, edges, and loops. Never provide snippets or partial "diffs". Do not output JSON at all unless explicitly requested.
+	* Formatting: You MUST wrap the JSON state in a standard Markdown code block (\`\`\`json) to ensure the 'Copy' button is available and the formatting is preserved. However, do NOT use bolding or other Markdown formatting inside the actual JSON strings themselves.
+	* Loop Direction Integrity: Before outputting any loop object, trace the path manually. If edge e1 goes from n1 -> n2, then e2 must start at n2. If any relationship points backward against the loop's flow, it is a non-loop structure and must be excluded from the loops array.
+	* Sequence Continuity: Maintain the continuous alphanumeric sequence for loop IDs (e.g., B1, R2, B3) without restarting or splitting counts by type.
+	* Dynamic Renumbering: If the user asks to reorder the narrative sequence of the loops, you MUST completely reassign their alphanumeric IDs (e.g., R1, B2, B3, B4) to match the newly requested order. This ensures external visualizers will sort and display them in the correct narrative sequence.
+[CONSTRAINTS END]
+[PERSONA START]
+
+[PERSONA END]
+[USER INPUT START]
+
+[USER INPUT END]`,
+                `[INSTRUCTIONS START]
+Assess Stratum
+
+You are an expert organizational architect specializing in Elliott Jaques’ Requisite Organization (RO) framework and Stratum Complexity analysis. 
+
+Your task is to analyze a situation and determine its natural Time-Span of Discretion (the natural timeframe) and its corresponding Stratum Level (from Stratum I up to Stratum X).
+
+Because I only have the raw situation to go on, you must bypass arbitrary calendar dates mentioned in the text. Instead, decode the linguistic structure and the mental processing complexity required to resolve the situation.
+
+### Your Analytical Framework:
+1. Stratum I (Up to 3 Months): Concrete Directives. Fully visible variables, linear path, requires Declarative processing.
+2. Stratum II (3 Months to 1 Year): Diagnostic/Accumulative. Requires gathering data over time to find a root cause.
+3. Stratum III (1 to 2 Years): Serial Sequences/Pathways. Multi-step trajectories where later steps depend on earlier ones.
+4. Stratum IV (2 to 5 Years): Parallel Processing/Trade-Offs. Balancing multiple independent operational tracks simultaneously.
+5. Stratum V (5 to 10 Years): Unified Systems. Managing a self-contained system interacting with an unpredictable environment.
+6. Stratum VI (10 to 20 Years): Global Networks. Overseeing multiple independent sovereign systems across international/geopolitical boundaries.
+7. Stratum VII (20 to 50 Years): Strategic Institutions. Reshaping entire national structures, sectors, or industries across decades.
+8. Stratum VIII (50 to 100 Years): Civilizational Architecture. Running massive, multi-decade societal or industrial tracks side-by-side to shape an epoch.
+9. Stratum IX (100 to 200+ Years): Paradigmatic Breakthroughs. Overturning or rewriting the underlying axioms and fundamental assumptions of human thought or reality.
+10. Stratum X (500+ Years): Species-Level Trajectories. Managing evolutionary, geological, or astronomical horizons for the preservation of conscious life.
+
+### Your Analysis Method:
+For the situation provided, evaluate the following four diagnostic pillars:
+- The Core Complexity Challenge: What is the actual "shape" of the problem (e.g., linear, serial, parallel, systemic, global, civilizational)?
+- The Mental Processing Demand: What type of thinking is required to handle the variables without the system crashing?
+- The Longest Unreviewed Loop of Intent: What is the absolute longest period an actor could work on resolving this situation, exercising autonomous judgment, before the physical reality of the outcome delivers a definitive success/failure feedback loop?
+- The Scope of the World: Does this modify a local, organizational, global, or civilizational reality?
+
+### Output Format:
+Provide a clear, direct, and scannable breakdown. Lead immediately with your definitive assessment, followed by the supporting forensic rationale using the four pillars above. Avoid empty filler or meta-commentary.
+[INSTRUCTIONS END]`,
+                `[Instructions Start]
+Detectives Panel 
+Act as a random number generator. From a diverse pool of at least 40 famous fictional, historical, or hard-boiled detectives, randomly select a subset of 3 to 5 names. For each detective selected, provide a one-sentence summary of their unique methodology. At each stage of the investigation, have 1 or 2 of them engage.
+[Instructions End]`,
+                `Begin the investigation. Calculate the Stratum level of our case: 'A local organic coffee shop is experiencing rapid sales growth, but customer wait times are skyrocketing and customer satisfaction is starting to drop.' Introduce the detectives and ask the first socratic question to kick off the case.`
+            ],
+            socratic: [
+                "You are Socrates, the ancient Athenian philosopher. You speak with a gentle, questioning tone, aiming to guide me to discover truths myself.",
+                "Always ask me what I think 'justice' or 'virtue' means in our first discussion, and question my assumptions patiently instead of giving direct answers. Use simple analogies like craftsmen, ships, or nature to make your questions relatable.",
+                "Introduce yourself and ask me a opening question about the nature of a good life or a just society, keeping your reply short."
+            ],
+            gm: [
+                "You are the Game Master of a retro sci-fi text adventure game set on a derelict spaceship named the 'Hyperion'. The tone is dark, atmospheric, and highly suspenseful.",
+                "Describe my environment with rich details about sensory inputs (sound of humming engines, flickering lights, smell of ozone). Never make decisions on behalf of my character, and wait for my explicit commands before moving the plot forward.",
+                "Describe the opening scene: I wake up on the floor of the dimly lit Bridge. The controls are sparking, the main viewscreen is cracked, and the only exit is a heavy airlock door to my right."
+            ],
+            writer: [
+                "You are a professional creative writing coach specializing in the 'Show, Don't Tell' technique. You are encouraging, highly analytical, and focus on sensory details.",
+                "When I write a sentence or describe a scene, rewrite it in two different ways using the 'Show, Don't Tell' method. Explain briefly what senses you target (sight, sound, touch, smell, emotion) in each version.",
+                "Say hello, explain how you will help me refine my writing, and ask me to provide a simple sentence or concept for us to rewrite together."
+            ]
+        };
+
+        // Initialize marked options
+        marked.setOptions({
+            gfm: true,
+            breaks: true,
+            headerIds: false,
+            mangle: false
+        });
+
+        // DOM Elements
+        const screens = {
+            apiKey: document.getElementById('api-key-screen'),
+            prompts: document.getElementById('prompts-screen'),
+            init: document.getElementById('init-screen'),
+            dialogue: document.getElementById('dialogue-screen')
+        };
+
+        const inputs = {
+            apiKey: document.getElementById('api-key-input'),
+            situation: document.getElementById('situation-input'),
+            chat: document.getElementById('chat-input-textarea')
+        };
+
+        const buttons = {
+            saveApiKey: document.getElementById('save-api-key-btn'),
+            logout: document.getElementById('logout-btn'),
+            startInit: document.getElementById('start-init-btn'),
+            backToApi: document.getElementById('back-to-api-btn'),
+            uploadFile: document.getElementById('upload-file-btn'),
+            reset: document.getElementById('reset-btn'),
+            export: document.getElementById('export-btn'),
+            donate: document.getElementById('donate-btn'),
+            chatSend: document.getElementById('chat-send-btn'),
+            showMap: document.getElementById('show-map-btn'),
+            roaAssessment: document.getElementById('roa-assessment-btn'),
+            loopOrder: document.getElementById('loop-order-btn'),
+            createStory: document.getElementById('create-story-btn'),
+            perspectives: document.getElementById('perspectives-btn')
+        };
+
+        const elements = {
+            modelSelect: document.getElementById('global-model-select'),
+            modelIndicator: document.getElementById('model-indicator'),
+            summarySituation: document.getElementById('summary-situation'),
+            chatMessages: document.getElementById('chat-messages'),
+            toast: document.getElementById('toast-alert'),
+            toastMessage: document.getElementById('toast-message'),
+            fileUploadInput: document.getElementById('file-upload-input'),
+            uploadedFilesList: document.getElementById('uploaded-files-list'),
+            step1: document.getElementById('step-1'),
+            step2: document.getElementById('step-2'),
+            step3: document.getElementById('step-3'),
+            step4: document.getElementById('step-4')
+        };
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', async () => {
+            let savedKey = sessionStorage.getItem('gemini_api_key');
+            
+            // Try reading from API_Key.js if not in sessionStorage
+            if (!savedKey && typeof MY_LOCAL_API_KEY !== 'undefined' && MY_LOCAL_API_KEY) {
+                try {
+                    const fileKey = MY_LOCAL_API_KEY.trim();
+                    const tier = await validateAndDetectTier(fileKey);
+                    // If successful, save it to session
+                    sessionStorage.setItem('gemini_api_key', fileKey);
+                    sessionStorage.setItem('gemini_api_tier', tier);
+                    savedKey = fileKey;
+                } catch (e) {
+                    console.warn("API_Key.js validation failed:", e);
+                }
+            }
+
+            // Check for saved API Key
+            if (savedKey) {
+                STATE.apiKey = savedKey;
+                inputs.apiKey.value = savedKey;
+                buttons.logout.style.display = 'block';
+
+                const cachedTier = sessionStorage.getItem('gemini_api_tier');
+                if (cachedTier) {
+                    STATE.apiTier = cachedTier;
+                    applyTierModelSettings(cachedTier);
+                } else {
+                    applyTierModelSettings('paid'); // default until checked
+                }
+
+                // Always validate in background to keep it up to date and correct any bad cache
+                validateAndDetectTier(savedKey).then(tier => {
+                    STATE.apiTier = tier;
+                    sessionStorage.setItem('gemini_api_tier', tier);
+                    applyTierModelSettings(tier);
+                }).catch(err => {
+                    console.warn("Background tier verification failed:", err);
+                    if (!cachedTier) {
+                        applyTierModelSettings('free');
+                    }
+                });
+                showScreen('prompts-screen');
+            } else {
+                applyTierModelSettings('paid'); // default until key provided
+                showScreen('api-key-screen');
+            }
+
+            // Set default preset (Mystery)
+            applyPreset('mystery');
+        });
+
+        // Event Listeners
+        elements.modelSelect.addEventListener('change', (e) => {
+            STATE.selectedModel = e.target.value;
+            sessionStorage.setItem('gemini_selected_model', STATE.selectedModel);
+            updateModelIndicators();
+        });
+
+        buttons.saveApiKey.addEventListener('click', async () => {
+            const key = inputs.apiKey.value.trim();
+            if (!key) {
+                showToast('Please enter a valid API key.');
+                return;
+            }
+
+            buttons.saveApiKey.disabled = true;
+            const btnSpan = buttons.saveApiKey.querySelector('span');
+            const originalText = btnSpan.textContent;
+            btnSpan.textContent = 'Validating key...';
+
+            try {
+                const tier = await validateAndDetectTier(key);
+                STATE.apiKey = key;
+                STATE.apiTier = tier;
+                sessionStorage.setItem('gemini_api_key', key);
+                sessionStorage.setItem('gemini_api_tier', tier);
+
+                applyTierModelSettings(tier);
+
+                buttons.logout.style.display = 'block';
+                showScreen('prompts-screen');
+                showToast(`API Key verified successfully (${tier === 'paid' ? 'Paid' : 'Free'} Tier).`, true);
+            } catch (err) {
+                showToast(`Invalid API Key: ${err.message}`);
+            } finally {
+                buttons.saveApiKey.disabled = false;
+                btnSpan.textContent = originalText;
+            }
+        });
+
+        buttons.logout.addEventListener('click', () => {
+            sessionStorage.removeItem('gemini_api_key');
+            sessionStorage.removeItem('gemini_api_tier');
+            STATE.apiKey = '';
+            STATE.apiTier = null;
+            inputs.apiKey.value = '';
+            buttons.logout.style.display = 'none';
+            applyTierModelSettings('paid'); // reset to original models dropdown
+            showScreen('api-key-screen');
+            showToast('API Key cleared.', true);
+        });
+
+        buttons.backToApi.addEventListener('click', () => {
+            showScreen('api-key-screen');
+        });
+
+        buttons.uploadFile.addEventListener('click', () => {
+            elements.fileUploadInput.click();
+        });
+
+        elements.fileUploadInput.addEventListener('change', async (e) => {
+            const files = e.target.files;
+            if (!files || files.length === 0) return;
+
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const reader = new FileReader();
+                
+                reader.onload = async (event) => {
+                    let fileData = event.target.result;
+                    let part = null;
+                    
+                    if (file.type.startsWith('image/') || file.type === 'application/pdf') {
+                        const base64Data = fileData.split(',')[1];
+                        part = {
+                            inlineData: {
+                                data: base64Data,
+                                mimeType: file.type
+                            }
+                        };
+                    } else {
+                        part = {
+                            text: `\n\n--- FILE: ${file.name} ---\n${fileData}\n--- END FILE ---\n\n`
+                        };
+                    }
+                    
+                    STATE.uploadedFiles.push({
+                        name: file.name,
+                        part: part
+                    });
+                    renderUploadedFiles();
+                };
+                
+                if (file.type.startsWith('image/') || file.type === 'application/pdf') {
+                    reader.readAsDataURL(file);
+                } else {
+                    reader.readAsText(file);
+                }
+            }
+            elements.fileUploadInput.value = '';
+        });
+
+        function renderUploadedFiles() {
+            elements.uploadedFilesList.innerHTML = '';
+            STATE.uploadedFiles.forEach((fileObj, index) => {
+                const item = document.createElement('div');
+                item.style.display = 'flex';
+                item.style.alignItems = 'center';
+                item.style.gap = '0.5rem';
+                
+                const nameSpan = document.createElement('span');
+                nameSpan.textContent = fileObj.name;
+                nameSpan.style.overflow = 'hidden';
+                nameSpan.style.textOverflow = 'ellipsis';
+                nameSpan.style.whiteSpace = 'nowrap';
+                nameSpan.style.maxWidth = '200px';
+                
+                const removeBtn = document.createElement('button');
+                removeBtn.innerHTML = '&times;';
+                removeBtn.style.background = 'none';
+                removeBtn.style.border = 'none';
+                removeBtn.style.color = 'var(--accent-red)';
+                removeBtn.style.cursor = 'pointer';
+                removeBtn.style.fontSize = '1.2rem';
+                removeBtn.style.lineHeight = '1';
+                removeBtn.title = 'Remove file';
+                
+                removeBtn.addEventListener('click', () => {
+                    STATE.uploadedFiles.splice(index, 1);
+                    renderUploadedFiles();
+                });
+                
+                item.appendChild(nameSpan);
+                item.appendChild(removeBtn);
+                elements.uploadedFilesList.appendChild(item);
+            });
+        }
+
+        buttons.startInit.addEventListener('click', () => {
+            if (STATE.apiKey && !STATE.apiTier) {
+                showToast('Verifying API Key tier... Please wait a moment.');
+                return;
+            }
+
+            const situation = inputs.situation.value.trim();
+
+            if (!situation) {
+                showToast('Please describe the situation.');
+                return;
+            }
+
+            // Retrieve background prompts from the default mystery preset
+            const p1 = PRESETS.mystery[0];
+            const p2 = PRESETS.mystery[1];
+            const p3 = PRESETS.mystery[2];
+            
+            // Construct Prompt 4 using the user's situation
+            const p4 = `Begin the investigation. Calculate the Stratum level of our case: '${situation}'. Introduce the detectives and ask the first socratic question to kick off the case.`;
+
+            STATE.prompts = [p1, p2, p3, p4];
+            runContextInitialization();
+        });
+
+        buttons.reset.addEventListener('click', () => {
+            if (confirm('Are you sure you want to reset the current session and re-define the prompts?')) {
+                resetSession();
+            }
+        });
+
+        buttons.export.addEventListener('click', () => {
+            exportConversation();
+        });
+
+        buttons.donate.addEventListener('click', () => {
+            window.open('https://www.paypal.com/donate/?hosted_button_id=E9ZGBA8SQ78Y6', '_blank');
+        });
+
+        buttons.showMap.addEventListener('click', async () => {
+            inputs.chat.value = 'Show Full Map';
+            await handleChatSubmit();
+        });
+
+        buttons.roaAssessment.addEventListener('click', async () => {
+            inputs.chat.value = 'Assessment';
+            await handleChatSubmit();
+        });
+
+        buttons.loopOrder.addEventListener('click', async () => {
+            inputs.chat.value = 'Are the loops in the best order to tell the story of the map?\nIf they are explain why.\nIf they are not explain the best order for the loops, reorder the loops in the best order, and dvise the user to Show Map.';
+            await handleChatSubmit();
+        });
+
+        buttons.createStory.addEventListener('click', async () => {
+            inputs.chat.value = 'Create Story';
+            await handleChatSubmit();
+        });
+
+        buttons.perspectives.addEventListener('click', async () => {
+            inputs.chat.value = 'Unique Perspectives';
+            await handleChatSubmit();
+        });
+
+        buttons.chatSend.addEventListener('click', handleChatSubmit);
+        inputs.chat.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleChatSubmit();
+            }
+        });
+
+        // Auto-resize input textarea
+        inputs.chat.addEventListener('input', () => {
+            inputs.chat.style.height = 'auto';
+            inputs.chat.style.height = (inputs.chat.scrollHeight) + 'px';
+        });
+
+        // Navigation Helper
+        function showScreen(screenId) {
+            STATE.currentScreen = screenId;
+            Object.keys(screens).forEach(key => {
+                if (screens[key].id === screenId) {
+                    screens[key].classList.add('active');
+                } else {
+                    screens[key].classList.remove('active');
+                }
+            });
+
+            // Adjust header options visibility
+            if (screenId === 'dialogue-screen') {
+                elements.modelSelect.style.display = 'none';
+                elements.modelIndicator.style.display = 'inline-flex';
+            } else {
+                elements.modelSelect.style.display = 'block';
+                elements.modelIndicator.style.display = 'none';
+            }
+        }
+
+        function updateModelIndicators() {
+            if (STATE.apiTier === 'free') {
+                elements.modelIndicator.textContent = 'GEMINI-3.5-FLASH';
+            } else {
+                elements.modelIndicator.textContent = STATE.selectedModel;
+            }
+        }
+
+        async function validateAndDetectTier(apiKey) {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview:generateContent?key=${apiKey}`;
+            const payload = {
+                contents: [{ parts: [{ text: "ping" }] }]
+            };
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (response.ok) {
+                    return 'paid';
+                } else {
+                    const data = await response.json().catch(() => ({}));
+                    const errMsg = data.error?.message || '';
+                    if (errMsg.includes('API key not valid')) {
+                        throw new Error('API key not valid. Please check your credentials.');
+                    }
+                    return 'free';
+                }
+            } catch (err) {
+                if (err.message.includes('API key not valid')) {
+                    throw err;
+                }
+                return 'free';
+            }
+        }
+
+        function applyTierModelSettings(tier) {
+            STATE.apiTier = tier;
+            const select = elements.modelSelect;
+            if (tier === 'free') {
+                STATE.selectedModel = 'gemini-3.5-flash';
+                sessionStorage.setItem('gemini_selected_model', 'gemini-3.5-flash');
+                select.innerHTML = `<option value="gemini-3.5-flash">Gemini 3.5 Flash</option>`;
+                select.value = 'gemini-3.5-flash';
+                select.disabled = true;
+            } else {
+                select.innerHTML = `
+                    <option value="gemini-3.1-pro-preview">Gemini 3.1 Pro (Preview)</option>
+                    <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+                    <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                    <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                    <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+                `;
+                select.disabled = false;
+                
+                const savedModel = sessionStorage.getItem('gemini_selected_model');
+                if (savedModel && savedModel !== 'gemini-3.5-flash') {
+                    STATE.selectedModel = savedModel;
+                    select.value = savedModel;
+                } else {
+                    STATE.selectedModel = 'gemini-3.1-pro-preview';
+                    select.value = 'gemini-3.1-pro-preview';
+                    sessionStorage.setItem('gemini_selected_model', 'gemini-3.1-pro-preview');
+                }
+            }
+            updateModelIndicators();
+        }
+
+        function applyPreset(name) {
+            const data = PRESETS[name];
+            if (data) {
+                if (name === 'mystery') {
+                    inputs.situation.value = `A local organic coffee shop is experiencing rapid sales growth, but customer wait times are skyrocketing and customer satisfaction is starting to drop.`;
+                } else {
+                    inputs.situation.value = data[2] || '';
+                }
+            }
+        }
+
+        // Alert Toast Helper
+        function showToast(message, isSuccess = false) {
+            elements.toastMessage.textContent = message;
+            if (isSuccess) {
+                elements.toast.classList.add('toast-success');
+                elements.toast.querySelector('.toast-icon').textContent = '✓';
+                elements.toast.classList.add('show');
+                
+                // Success messages clear in 4 seconds
+                if (window.toastTimeout) clearTimeout(window.toastTimeout);
+                window.toastTimeout = setTimeout(() => {
+                    elements.toast.classList.remove('show');
+                }, 4000);
+            } else {
+                elements.toast.classList.remove('toast-success');
+                elements.toast.querySelector('.toast-icon').textContent = '✕';
+                elements.toast.classList.add('show');
+                
+                // Error messages clear in 15 seconds
+                if (window.toastTimeout) clearTimeout(window.toastTimeout);
+                window.toastTimeout = setTimeout(() => {
+                    elements.toast.classList.remove('show');
+                }, 15000);
+            }
+
+            // Click to dismiss immediately
+            elements.toast.onclick = () => {
+                elements.toast.classList.remove('show');
+                if (window.toastTimeout) clearTimeout(window.toastTimeout);
+            };
+        }
+
+        // Call Gemini API - General utility
+        async function fetchGemini(contents, onChunk = null, overrideModel = null, bypassSystemInstruction = false) {
+            const isStreaming = typeof onChunk === 'function';
+            const endpoint = isStreaming ? 'streamGenerateContent?alt=sse&key=' : 'generateContent?key=';
+            const modelToUse = overrideModel || STATE.selectedModel;
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelToUse}:${endpoint}${STATE.apiKey}`;
+            
+            const payload = { contents: contents };
+            if (STATE.systemInstruction && !bypassSystemInstruction) {
+                payload.system_instruction = { parts: [{ text: STATE.systemInstruction }] };
+            }
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json().catch(() => ({}));
+                    throw new Error(errData.error?.message || `HTTP Error ${response.status}`);
+                }
+
+                if (isStreaming) {
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder("utf-8");
+                    let fullText = "";
+                    let buffer = "";
+                    let lastUpdate = 0;
+                    
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+                        
+                        buffer += decoder.decode(value, { stream: true });
+                        const lines = buffer.split('\n');
+                        buffer = lines.pop(); // Keep incomplete line in buffer
+                        
+                        let hasNewChunk = false;
+                        for (const line of lines) {
+                            if (line.startsWith('data: ')) {
+                                const dataStr = line.substring(6).trim();
+                                if (dataStr === '[DONE]') continue;
+                                try {
+                                    const data = JSON.parse(dataStr);
+                                    if (data.candidates && data.candidates.length > 0) {
+                                        const chunk = data.candidates[0].content?.parts?.[0]?.text || '';
+                                        fullText += chunk;
+                                        hasNewChunk = true;
+                                    }
+                                } catch (e) {
+                                    console.warn("Failed to parse SSE data chunk", e);
+                                }
+                            }
+                        }
+
+                        if (hasNewChunk && isStreaming) {
+                            const now = Date.now();
+                            if (now - lastUpdate > 50) {
+                                onChunk(fullText, "");
+                                lastUpdate = now;
+                            }
+                        }
+                    }
+                    
+                    if (isStreaming) {
+                        onChunk(fullText, "");
+                    }
+                    
+                    return fullText;
+                } else {
+                    const data = await response.json();
+                    if (!data.candidates || data.candidates.length === 0) {
+                        throw new Error('Empty response received from Gemini.');
+                    }
+                    return data.candidates[0].content.parts[0].text;
+                }
+            } catch (err) {
+                console.error('Gemini API Error:', err);
+                throw err;
+            }
+        }
+
+        // Sequential Context Initialization
+        async function runContextInitialization() {
+            // Hide previous error banner if any
+            const errBanner = document.getElementById('init-error-banner');
+            if (errBanner) errBanner.style.display = 'none';
+
+            showScreen('init-screen');
+            updateStepState('step-1', 'active');
+            updateStepState('step-2', 'pending');
+            updateStepState('step-3', 'pending');
+            updateStepState('step-4', 'pending');
+
+            // Reset conversation history
+            STATE.history = [];
+            STATE.systemInstruction = STATE.prompts[1] + "\n\n" + STATE.prompts[2] + "\n\n" + STATE.prompts[0];
+
+            try {
+                // Instantly mark steps 1, 2 and 3 as completed
+                updateStepState('step-1', 'completed');
+                updateStepState('step-2', 'completed');
+                updateStepState('step-3', 'completed');
+                updateStepState('step-4', 'active');
+
+                // Step 4: Send Prompt 4 (Situation)
+                let userParts = [{ text: STATE.prompts[3] }];
+                if (STATE.uploadedFiles && STATE.uploadedFiles.length > 0) {
+                    STATE.uploadedFiles.forEach(f => {
+                        userParts.push(f.part);
+                    });
+                }
+                STATE.history.push({
+                    role: 'user',
+                    parts: userParts
+                });
+
+                const response4 = await fetchGemini(STATE.history);
+                STATE.responses[3] = response4;
+                STATE.history.push({
+                    role: 'model',
+                    parts: [{ text: response4 }]
+                });
+
+                updateStepState('step-4', 'completed');
+
+                // Initialization Finished! Proceed to dialogue screen
+                setTimeout(() => {
+                    setupDialogueScreen();
+                }, 800);
+
+            } catch (err) {
+                showToast(`Initialization failed: ${err.message}`);
+                
+                // Show persistent error message on prompts screen
+                if (errBanner) {
+                    errBanner.textContent = `Initialization Failure: ${err.message}. Please verify your API Key and check your network connection.`;
+                    errBanner.style.display = 'block';
+                }
+                
+                showScreen('prompts-screen');
+            }
+        }
+
+        function updateStepState(stepId, state) {
+            const el = document.getElementById(stepId);
+            el.classList.remove('active', 'completed');
+            if (state === 'active') {
+                el.classList.add('active');
+            } else if (state === 'completed') {
+                el.classList.add('completed');
+            }
+        }
+
+        // Transition from Initialization to Dialogue
+        function setupDialogueScreen() {
+            // Fill in the sidebar content
+            elements.summarySituation.textContent = inputs.situation.value;
+
+            // Clear chat message container
+            elements.chatMessages.innerHTML = '';
+
+            // Add Context Division Banner
+            const banner = document.createElement('div');
+            banner.className = 'context-divider';
+            banner.textContent = 'System Initialization Context';
+            elements.chatMessages.appendChild(banner);
+
+            // Populate the third initialization turn (Prompt 4 & Response 4)
+            appendMessageToUI('user', STATE.prompts[3], `Situation`);
+            appendMessageToUI('model', STATE.responses[3], `Gemini Setup Response`);
+
+            // Add End Context Banner
+            const endBanner = document.createElement('div');
+            endBanner.className = 'context-divider';
+            endBanner.textContent = 'Active Dialogue Session';
+            elements.chatMessages.appendChild(endBanner);
+
+            showScreen('dialogue-screen');
+            scrollToBottom();
+        }
+
+        // Extract system map JSON data containing nodes and edges
+        function extractMapData(text) {
+            // Check for markdown code blocks first
+            const codeBlockRegex = /```(?:json)?\s*(\{[\s\S]*?\})\s*```/i;
+            const cbMatch = text.match(codeBlockRegex);
+            if (cbMatch) {
+                try {
+                    const jsonStr = cbMatch[1].trim();
+                    const parsed = JSON.parse(jsonStr);
+                    if (parsed.nodes && parsed.edges) {
+                        return { jsonStr, rawBlock: cbMatch[0] };
+                    }
+                } catch (e) {}
+            }
+
+            // Check if the entire text (or a subset) is a raw JSON block
+            try {
+                const start = text.indexOf('{');
+                const end = text.lastIndexOf('}');
+                if (start !== -1 && end !== -1 && end > start) {
+                    const jsonStr = text.substring(start, end + 1).trim();
+                    const parsed = JSON.parse(jsonStr);
+                    if (parsed.nodes && parsed.edges) {
+                        return { jsonStr, rawBlock: text.substring(start, end + 1) };
+                    }
+                }
+            } catch (e) {}
+
+            return null;
+        }
+
+        let pendingMapData = null;
+
+        // Listen for the map window to say it's ready
+        window.addEventListener('message', function(event) {
+            if (event.data === 'ama_map_ready' && pendingMapData) {
+                event.source.postMessage({ type: 'ama_map_data', data: pendingMapData }, '*');
+                pendingMapData = null; // Clear it after sending
+            }
+        });
+
+        // Trigger map visualization window
+        function handleVisualizeClick(jsonStr) {
+            try {
+                // Fallback for standard setups
+                localStorage.setItem('aha_map_shared_data', jsonStr);
+                
+                // Store for postMessage (works on strict local file setups like Mac Safari)
+                pendingMapData = jsonStr;
+                
+                window.open('AMA_Map.html', '_blank');
+                showToast('Launching AMA_Map...', true);
+            } catch (err) {
+                showToast('Failed to launch map: ' + err.message);
+            }
+        }
+        function handleSaveJsonClick(jsonStr) {
+            try {
+                // Ensure it's pretty-printed
+                const parsed = JSON.parse(jsonStr);
+                const prettyJson = JSON.stringify(parsed, null, 2);
+                
+                const blob = new Blob([prettyJson], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                
+                let filename = "system_map.json";
+                if (parsed && parsed.metadata && parsed.metadata.topic) {
+                    const cleanTopic = parsed.metadata.topic.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+                    filename = `system_map_${cleanTopic}.json`;
+                }
+                
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                }, 0);
+                
+                showToast('JSON Map saved successfully.', true);
+            } catch (err) {
+                showToast('Failed to save JSON Map: ' + err.message);
+            }
+        }
+
+        // Add Message to Chat History UI
+        function appendMessageToUI(role, text, customName = null) {
+            const messageRow = document.createElement('div');
+            messageRow.className = `message-row ${role}`;
+
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble';
+
+            const info = document.createElement('div');
+            info.className = 'message-info';
+            info.textContent = customName || (role === 'user' ? 'You' : 'Gemini');
+            
+            const content = document.createElement('div');
+            content.className = 'message-content';
+
+            const mapData = extractMapData(text);
+            let processedText = text;
+            let mapJsonString = null;
+
+            if (mapData) {
+                mapJsonString = mapData.jsonStr;
+                const mapPlaceholder = `<div class="map-action-container" style="border: 1px dashed rgba(16, 185, 129, 0.4); background: rgba(16, 185, 129, 0.05); border-radius: 12px; padding: 1.25rem 1.25rem 1rem 1.25rem; margin: 1rem 0;">
+                    <strong style="color: var(--text-primary); display: block; font-family: var(--font-display); font-size: 0.95rem; margin-bottom: 0.4rem;">💡 System Relationship Map Detected</strong>
+                    <p style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.4; margin-bottom: 1rem;">This response contains relationship data. Click below to view it dynamically inside AMA Map.</p>
+                    <div style="display: flex; gap: 0.75rem; width: 100%;">
+                        <button class="btn btn-primary map-visualize-btn" style="flex: 1; background: linear-gradient(135deg, #10b981 0%, #059669 100%); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); border: none; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.75rem 1.25rem;">
+                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+                            <span>Visualize Relationship Map</span>
+                        </button>
+                        <button class="btn btn-secondary map-save-json-btn" style="flex: 1; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.75rem 1.25rem;">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                            <span>Save JSON Map</span>
+                        </button>
+                    </div>
+                    <details class="raw-json-details" style="margin-top: 0.75rem;">
+                        <summary style="cursor: pointer; font-size: 0.75rem; color: var(--secondary-color); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; display: inline-block;">Show Raw Map JSON</summary>
+                        <pre style="margin-top: 0.5rem; background: #070a13; border: 1px solid var(--card-border); border-radius: 8px; padding: 0.75rem; max-height: 180px; overflow-y: auto; text-align: left;"><code class="language-json" style="color: #cbd5e1; font-family: var(--font-mono); font-size: 0.8rem; line-height: 1.4;"></code></pre>
+                    </details>
+                </div>`;
+                
+                processedText = text.replace(mapData.rawBlock, mapPlaceholder);
+            }
+
+            let markdownText = text;
+            if (mapData) {
+                markdownText = text.replace(mapData.rawBlock, '\n\n> [!NOTE]\n> System Relationship Map Detected and Saved.\n\n');
+            }
+            content.setAttribute('data-raw-content', encodeURIComponent(markdownText));
+
+            content.innerHTML = marked.parse(processedText);
+
+            // Populate raw JSON code tag and bind click event
+            if (mapData && mapJsonString) {
+                try {
+                    const codeEl = content.querySelector('.raw-json-details code');
+                    if (codeEl) {
+                        codeEl.textContent = JSON.stringify(JSON.parse(mapJsonString), null, 2);
+                    }
+                } catch (e) {
+                    const codeEl = content.querySelector('.raw-json-details code');
+                    if (codeEl) codeEl.textContent = mapJsonString;
+                }
+                const btnEl = content.querySelector('.map-visualize-btn');
+                if (btnEl) {
+                    btnEl.addEventListener('click', () => {
+                        handleVisualizeClick(mapJsonString);
+                    });
+                }
+                const saveBtnEl = content.querySelector('.map-save-json-btn');
+                if (saveBtnEl) {
+                    saveBtnEl.addEventListener('click', () => {
+                        handleSaveJsonClick(mapJsonString);
+                    });
+                }
+            }
+
+            bubble.appendChild(info);
+            bubble.appendChild(content);
+            messageRow.appendChild(bubble);
+            elements.chatMessages.appendChild(messageRow);
+            
+            if (role === 'user') {
+                scrollToBottom();
+            } else {
+                setTimeout(() => {
+                    messageRow.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 50);
+            }
+            return messageRow;
+        }
+
+        // Scroll helper
+        function scrollToBottom() {
+            elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
+        }
+
+        // Handle Chat Submission
+        async function handleChatSubmit() {
+            const text = inputs.chat.value.trim();
+            if (!text) return;
+
+            // Clear input box and reset size
+            inputs.chat.value = '';
+            inputs.chat.style.height = '48px';
+
+            // Add to UI as User Message
+            appendMessageToUI('user', text);
+
+            // Intercept 'Create Story' command
+            if (text.toLowerCase() === 'create story') {
+                await generateForensicStory();
+                return;
+            }
+
+            // Intercept 'Unique Perspectives' command
+            if (text.toLowerCase() === 'unique perspectives') {
+                await generateUniquePerspectives();
+                return;
+            }
+
+            let apiText = text;
+            
+            // Intercept 'Assessment' command
+            if (text.toLowerCase() === 'assessment') {
+                apiText = EMBEDDED_ROA_ASSESSMENT;
+            }
+            
+            // Intercept 'Show Full Map' to inject contextual essence
+            if (text.toLowerCase() === 'show full map') {
+                const typingRow = document.createElement('div');
+                typingRow.className = 'message-row model';
+                typingRow.innerHTML = `
+                    <div class="message-bubble" style="padding: 0.75rem 1rem;">
+                        <div class="message-info">Gemini is thinking (Extracting Contextual Essence for Map...)</div>
+                        <div class="typing-indicator">
+                            <span class="typing-dot"></span>
+                            <span class="typing-dot"></span>
+                            <span class="typing-dot"></span>
+                        </div>
+                    </div>
+                `;
+                elements.chatMessages.appendChild(typingRow);
+                scrollToBottom();
+
+                try {
+                    const tempHistory = [...STATE.history];
+                    tempHistory.push({
+                        role: 'user',
+                        parts: [{ text: EMBEDDED_CONTEXTUAL_ESSENCE }]
+                    });
+                    const contextualEssence = await fetchGemini(tempHistory, null, 'gemini-3.5-flash', true);
+                    typingRow.remove();
+                    
+                    apiText = `Show Full Map.
+Please include the following Contextual Essence as the 'situational_essence' in the JSON metadata:
+${contextualEssence}
+Also, include the 'stratum_level' you calculated during the initial situation analysis in the metadata.`;
+                } catch (err) {
+                    typingRow.remove();
+                    console.error("Failed to fetch contextual essence:", err);
+                    // fallback to standard text
+                }
+            }
+
+            // Add to model request payload
+            STATE.history.push({
+                role: 'user',
+                parts: [{ text: text }]
+            });
+
+            // Context Pruning: keep first 2 items (Situation), and the last 15 items
+            const MAX_HISTORY = 15;
+            let payloadHistory = STATE.history.map(item => ({...item, parts: [...item.parts]})); // clone history
+            if (payloadHistory.length > MAX_HISTORY + 2) {
+                payloadHistory = [
+                    payloadHistory[0],
+                    payloadHistory[1],
+                    ...payloadHistory.slice(-MAX_HISTORY)
+                ];
+            }
+            
+            // Swap out the last user message for the API call if apiText was modified
+            if (apiText !== text) {
+                payloadHistory[payloadHistory.length - 1].parts[0].text = apiText;
+            }
+
+            // Add initial empty message bubble for the response
+            const responseRow = appendMessageToUI('model', '');
+            const contentDiv = responseRow.querySelector('.message-content');
+            
+            // Add typing indicator initially
+            contentDiv.innerHTML = `
+                <div class="typing-indicator" style="padding: 0; margin-top: 5px;">
+                    <span class="typing-dot"></span>
+                    <span class="typing-dot"></span>
+                    <span class="typing-dot"></span>
+                </div>
+            `;
+            scrollToBottom();
+
+            try {
+                let finalReply = "";
+                // Call API with pruned history and streaming callback
+                await fetchGemini(payloadHistory, (fullText, chunk) => {
+                    finalReply = fullText;
+                    
+                    let displayString = fullText;
+                    const mapData = extractMapData(fullText);
+                    
+                    if (mapData) {
+                        displayString = fullText.replace(mapData.rawBlock, '\n\n*(Map Data Generated)*');
+                    } else {
+                        // Check for incomplete JSON code block
+                        const jsonStartMatch = displayString.match(/```(?:json)?\s*\{/i) || displayString.match(/\{\s*"nodes":/i);
+                        if (jsonStartMatch) {
+                            const startIndex = jsonStartMatch.index;
+                            const closingIndex = displayString.indexOf('```', startIndex + 3);
+                            if (closingIndex === -1) {
+                                displayString = displayString.substring(0, startIndex) + '\n\n*(Generating Map Data...)*';
+                            }
+                        }
+                    }
+                    
+                    contentDiv.innerHTML = marked.parse(displayString);
+                    scrollToBottom();
+                });
+
+                // Final pass to render map buttons if present
+                const finalMapData = extractMapData(finalReply);
+                if (finalMapData) {
+                    responseRow.remove();
+                    appendMessageToUI('model', finalReply);
+                } else {
+                    contentDiv.setAttribute('data-raw-content', encodeURIComponent(finalReply));
+                    setTimeout(() => { responseRow.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50);
+                }
+
+                // Append response to conversation history
+                STATE.history.push({
+                    role: 'model',
+                    parts: [{ text: finalReply }]
+                });
+
+                // Enable action buttons that depend on the map only when the map data is generated
+                if (finalMapData || text.toLowerCase() === 'show full map') {
+                    buttons.loopOrder.disabled = false;
+                    buttons.createStory.disabled = false;
+                    buttons.perspectives.disabled = false;
+                }
+
+                // Enable Show Map button after 3 dialogue turns
+                const dialogueTurns = (STATE.history.length - 2) / 2;
+                if (dialogueTurns >= 3) {
+                    buttons.showMap.disabled = false;
+                    buttons.roaAssessment.disabled = false;
+                }
+
+            } catch (err) {
+                contentDiv.innerHTML = `
+                    <div style="color: #fca5a5; background: rgba(239, 68, 68, 0.05); padding: 0.5rem; border-radius: 8px;">
+                        Failed to communicate with Gemini API. Error: ${err.message}
+                    </div>
+                `;
+                scrollToBottom();
+
+                // Pop the failing user prompt out of the history so it doesn't pollute subsequent attempts
+                STATE.history.pop();
+            }
+        }
+
+        // Two-step Forensic Story Generation Pipeline
+        async function generateForensicStory() {
+            // Add typing indicator bubble with Step 1 status
+            const typingRow = document.createElement('div');
+            typingRow.className = 'message-row model';
+            typingRow.innerHTML = `
+                <div class="message-bubble" style="padding: 0.75rem 1rem;">
+                    <div class="message-info" id="story-step-indicator">Gemini is thinking (Step 1/2: Extracting Contextual Essence...)</div>
+                    <div class="typing-indicator">
+                        <span class="typing-dot"></span>
+                        <span class="typing-dot"></span>
+                        <span class="typing-dot"></span>
+                    </div>
+                </div>
+            `;
+            elements.chatMessages.appendChild(typingRow);
+            scrollToBottom();
+
+            try {
+                // --- STEP 1: Contextual Essence Extraction ---
+                // Load Contextual Essence instructions
+                const contextualEssencePrompt = EMBEDDED_CONTEXTUAL_ESSENCE;
+
+                // Construct temporary history with this instruction at the end
+                const tempHistory = [...STATE.history];
+                tempHistory.push({
+                    role: 'user',
+                    parts: [{ text: contextualEssencePrompt }]
+                });
+
+                // Fetch Contextual Essence summary
+                const contextualEssence = await fetchGemini(tempHistory, null, 'gemini-3.5-flash', true);
+                console.log("Extracted Contextual Essence: ", contextualEssence);
+
+                // Update typing indicator status for Step 2
+                const indicatorText = document.getElementById('story-step-indicator');
+                if (indicatorText) {
+                    indicatorText.textContent = "Gemini is thinking (Step 2/2: Architecting Forensic Narrative...)";
+                }
+
+                // --- STEP 2: Forensic Narrative Generation ---
+                // Locate latest JSON map
+                const latestJsonMap = getLatestJsonMap();
+
+                // Load Aha! Story instructions
+                const ahaStoryPrompt = EMBEDDED_AHA_STORY;
+
+                // Compile story generation input prompt
+                const compiledStoryPrompt = `${ahaStoryPrompt}
+
+[USER INPUT DATA]
+Contextual Essence:
+${contextualEssence}
+
+Latest JSON Map Structure:
+${latestJsonMap || '{}'}
+[USER INPUT DATA END]`;
+
+                // Request final story from Gemini as a single-turn instruction
+                const storyContents = [
+                    {
+                        role: 'user',
+                        parts: [{ text: compiledStoryPrompt }]
+                    }
+                ];
+
+                // Remove typing indicator row before streaming
+                typingRow.remove();
+                
+                // Create message bubble for streaming output
+                const responseRow = appendMessageToUI('model', '', 'Forensic Narrative');
+                const contentDiv = responseRow.querySelector('.message-content');
+                
+                contentDiv.innerHTML = `
+                    <div class="typing-indicator" style="padding: 0; margin-top: 5px;">
+                        <span class="typing-dot"></span>
+                        <span class="typing-dot"></span>
+                        <span class="typing-dot"></span>
+                    </div>
+                `;
+                scrollToBottom();
+                
+                let finalStoryOutput = "";
+                await fetchGemini(storyContents, (fullText) => {
+                    finalStoryOutput = fullText;
+                    contentDiv.innerHTML = marked.parse(fullText);
+                    contentDiv.setAttribute('data-raw-content', encodeURIComponent(fullText));
+                    scrollToBottom();
+                }, null, true);
+
+                setTimeout(() => { responseRow.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50);
+
+                // Append 'Create Story' user command and Gemini response to history
+                STATE.history.push({
+                    role: 'user',
+                    parts: [{ text: 'Create Story' }]
+                });
+                STATE.history.push({
+                    role: 'model',
+                    parts: [{ text: finalStoryOutput }]
+                });
+
+            } catch (err) {
+                // Remove typing indicator row
+                typingRow.remove();
+
+                // Append error as alert bubble
+                const errorRow = document.createElement('div');
+                errorRow.className = 'message-row model';
+                errorRow.innerHTML = `
+                    <div class="message-bubble" style="border-color: var(--accent-red); background: rgba(239, 68, 68, 0.05);">
+                        <div class="message-info" style="color: var(--accent-red);">Forensic Story Generation Failure</div>
+                        <div class="message-content" style="color: #fca5a5;">Failed to complete two-step story generation. Error: ${err.message}</div>
+                    </div>
+                `;
+                elements.chatMessages.appendChild(errorRow);
+                scrollToBottom();
+            }
+        }
+
+        // Two-step Unique Perspectives Generation Pipeline
+        async function generateUniquePerspectives() {
+            // Add typing indicator bubble with Step 1 status
+            const typingRow = document.createElement('div');
+            typingRow.className = 'message-row model';
+            typingRow.innerHTML = `
+                <div class="message-bubble" style="padding: 0.75rem 1rem;">
+                    <div class="message-info" id="perspectives-step-indicator">Gemini is thinking (Step 1/2: Extracting Literature Seeds...)</div>
+                    <div class="typing-indicator">
+                        <span class="typing-dot"></span>
+                        <span class="typing-dot"></span>
+                        <span class="typing-dot"></span>
+                    </div>
+                </div>
+            `;
+            elements.chatMessages.appendChild(typingRow);
+            scrollToBottom();
+
+            try {
+                // --- STEP 1: Literature Seed Generation ---
+                // Load Literature Seed instructions
+                const literatureSeedPrompt = EMBEDDED_LITERATURE_SEED;
+
+                // Construct temporary history with this instruction at the end
+                const tempHistory = [...STATE.history];
+                tempHistory.push({
+                    role: 'user',
+                    parts: [{ text: literatureSeedPrompt }]
+                });
+
+                // Fetch Literature Seed summary
+                const literatureSeed = await fetchGemini(tempHistory, null, 'gemini-3.5-flash', true);
+                console.log("Extracted Literature Seed: ", literatureSeed);
+
+                // Update typing indicator status for Step 2
+                const indicatorText = document.getElementById('perspectives-step-indicator');
+                if (indicatorText) {
+                    indicatorText.textContent = "Gemini is thinking (Step 2/2: Surfacing Unique Published Perspectives...)";
+                }
+
+                // --- STEP 2: Unique Perspectives Generation ---
+                // Locate latest JSON map
+                const latestJsonMap = getLatestJsonMap();
+
+                // Load Unique Perspectives instructions
+                const uniquePerspectivesPrompt = EMBEDDED_UNIQUE_PERSPECTIVES;
+
+                // Compile perspectives generation input prompt
+                const compiledPerspectivesPrompt = `${uniquePerspectivesPrompt}
+
+[USER DATA]
+Literature Seed:
+${literatureSeed}
+
+Latest JSON Map Structure:
+${latestJsonMap || '{}'}
+[USER DATA END]`;
+
+                // Request final published perspectives from Gemini as a single-turn instruction
+                const perspectivesContents = [
+                    {
+                        role: 'user',
+                        parts: [{ text: compiledPerspectivesPrompt }]
+                    }
+                ];
+
+                // Remove typing indicator row
+                typingRow.remove();
+
+                const responseRow = appendMessageToUI('model', '', 'Unique Perspectives');
+                const contentDiv = responseRow.querySelector('.message-content');
+                contentDiv.innerHTML = `
+                    <div class="typing-indicator" style="padding: 0; margin-top: 5px;">
+                        <span class="typing-dot"></span>
+                        <span class="typing-dot"></span>
+                        <span class="typing-dot"></span>
+                    </div>
+                `;
+                scrollToBottom();
+
+                let finalPerspectivesOutput = "";
+                await fetchGemini(perspectivesContents, (fullText) => {
+                    finalPerspectivesOutput = fullText;
+                    contentDiv.innerHTML = marked.parse(fullText);
+                    contentDiv.setAttribute('data-raw-content', encodeURIComponent(fullText));
+                    scrollToBottom();
+                }, null, true);
+
+                setTimeout(() => { responseRow.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50);
+
+                // Save 'Unique Perspectives' user command and Gemini response to history
+                STATE.history.push({
+                    role: 'user',
+                    parts: [{ text: 'Unique Perspectives' }]
+                });
+                STATE.history.push({
+                    role: 'model',
+                    parts: [{ text: finalPerspectivesOutput }]
+                });
+
+            } catch (err) {
+                // Remove typing indicator row
+                typingRow.remove();
+
+                // Append error as alert bubble
+                const errorRow = document.createElement('div');
+                errorRow.className = 'message-row model';
+                errorRow.innerHTML = `
+                    <div class="message-bubble" style="border-color: var(--accent-red); background: rgba(239, 68, 68, 0.05);">
+                        <div class="message-info" style="color: var(--accent-red);">Unique Perspectives Generation Failure</div>
+                        <div class="message-content" style="color: #fca5a5;">Failed to complete two-step perspectives query. Error: ${err.message}</div>
+                    </div>
+                `;
+                elements.chatMessages.appendChild(errorRow);
+                scrollToBottom();
+            }
+        }
+
+        // Reset current session
+        function resetSession() {
+            STATE.history = [];
+            STATE.prompts = ['', '', '', ''];
+            STATE.responses = ['', '', '', ''];
+            STATE.uploadedFiles = [];
+            if (elements.uploadedFilesList) elements.uploadedFilesList.innerHTML = '';
+            buttons.showMap.disabled = true;
+            buttons.roaAssessment.disabled = true;
+            buttons.loopOrder.disabled = true;
+            buttons.createStory.disabled = true;
+            buttons.perspectives.disabled = true;
+            applyPreset('mystery');
+            showScreen('prompts-screen');
+        }
+
+        // Export Conversation History to JSON / Text
+        function exportConversation() {
+            let exportStr = `=== GEMINI DIALOGUE ARCHITECT EXPORT ===\n`;
+            exportStr += `Model: ${STATE.selectedModel}\n`;
+            exportStr += `Date: ${new Date().toLocaleString()}\n\n`;
+
+            exportStr += `--- DIALOGUE RECORD ---\n`;
+            const messageRows = elements.chatMessages.querySelectorAll('.message-row');
+            if (messageRows.length === 0) {
+                exportStr += `[No dialogue exchanges recorded yet]\n`;
+            } else {
+                messageRows.forEach(row => {
+                    const contentDiv = row.querySelector('.message-content');
+                    if (contentDiv) {
+                        const isUser = row.classList.contains('user');
+                        const speaker = isUser ? 'YOU' : 'GEMINI';
+                        const rawContent = contentDiv.getAttribute('data-raw-content');
+                        const text = rawContent ? decodeURIComponent(rawContent).trim() : contentDiv.innerText.trim();
+                        if (text) {
+                            exportStr += `${speaker}:\n${text}\n\n`;
+                        }
+                    }
+                });
+            }
+
+            // Create download link
+            const blob = new Blob([exportStr], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `gemini-dialogue-export-${Date.now()}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast('Conversation exported successfully.', true);
+        }
+
+        // Generate Situations Logic
+        window.addEventListener('DOMContentLoaded', () => {
+            const SITUATION_GENERATOR_PROMPT = `Situation Generator v1.0
+
+Generate {NUMBER_OF_SITUATIONS} distinct "Aha! Mystery Situations" focusing on {TOPIC}, starting at number {STARTING_NUMBER}, and conceptualized strictly at Elliott Jaques Stratum {STRATUM_LEVEL} (matching its specific time span of discretion and cognitive complexity).
+
+Core Operational Rules:
+1. Structural Sequence: Every situation must follow the exact 4-part structure below.
+2. Systemic Variance Guardrail: Each situation must explore an entirely unique operational mechanism, industry archetype, or systemic failure mode. Do not repeat underlying paradoxes.
+3. Continuity Anchor: Avoid duplicating these previously covered themes: None.
+4. The Persona & Tone: Write from an engaging detective perspective. Completely ban all academic systems jargon (e.g., "feedback loops"). Let the reader discover the structural behaviors naturally.
+
+Structure to replicate for each situation:
+
+[Sequence Number]: [Catchy, Insightful Title]
+* Situation: [Brief initial observation or framing]
+* The Current Event: [A realistic event scaled to the requested Stratum's time span]
+* The "Aha!" Angle: [The invisible systemic paradox or unintended consequence; why the surface event is a complex contradiction]
+* The Question: *[A single, italicized, high-level question probing the structural trade-offs]*`;
+
+            const genModal = document.getElementById('generate-modal');
+            const saveModal = document.getElementById('save-modal');
+            let generatedContentCache = '';
+
+            document.getElementById('generate-situations-btn')?.addEventListener('click', () => {
+                if(!STATE.apiKey) {
+                    showToast('Please enter your API Key first (Go back to first screen)', false);
+                    return;
+                }
+                genModal.classList.add('active');
+            });
+
+            document.getElementById('gen-cancel-btn')?.addEventListener('click', () => {
+                genModal.classList.remove('active');
+            });
+
+            document.getElementById('gen-submit-btn')?.addEventListener('click', async () => {
+                const topic = document.getElementById('gen-topic').value || 'General';
+                const numSit = parseInt(document.getElementById('gen-number').value) || 1;
+                const startNum = document.getElementById('gen-start').value || '1';
+                const stratum = document.getElementById('gen-stratum').value || '1';
+
+                genModal.classList.remove('active');
+                
+                const prompt = SITUATION_GENERATOR_PROMPT
+                    .replace('{NUMBER_OF_SITUATIONS}', numSit)
+                    .replace('{TOPIC}', topic)
+                    .replace('{STARTING_NUMBER}', startNum)
+                    .replace('{STRATUM_LEVEL}', stratum);
+
+                const prevBtnText = document.getElementById('generate-situations-btn').innerHTML;
+                document.getElementById('generate-situations-btn').innerHTML = '<span>Generating...</span>';
+                document.getElementById('generate-situations-btn').disabled = true;
+
+                try {
+                    // Wrap prompt into history format
+                    const payload = [{ role: 'user', parts: [{ text: prompt }] }];
+                    const response = await fetchGemini(payload);
+                    
+                    if (numSit === 1) {
+                        const sitInput = document.getElementById('situation-input');
+                        const defaultCoffeeShop = "A local organic coffee shop is experiencing rapid sales growth, but customer wait times are skyrocketing and customer satisfaction is starting to drop.";
+                        let currentVal = sitInput.value;
+                        if (currentVal.includes(defaultCoffeeShop)) {
+                            currentVal = currentVal.replace(defaultCoffeeShop, '').trim();
+                        }
+                        sitInput.value = currentVal ? (response + "\n\n" + currentVal) : response;
+                        showToast('Situation generated and added to field.', true);
+                    } else {
+                        generatedContentCache = response;
+                        saveModal.classList.add('active');
+                    }
+                } catch(e) {
+                    console.error(e);
+                    showToast('Failed to generate situations', false);
+                } finally {
+                    document.getElementById('generate-situations-btn').innerHTML = prevBtnText;
+                    document.getElementById('generate-situations-btn').disabled = false;
+                }
+            });
+
+            document.getElementById('save-submit-btn')?.addEventListener('click', () => {
+                let filename = document.getElementById('save-filename').value;
+                if(!filename.endsWith('.txt') && !filename.endsWith('.md')) filename += '.txt';
+                
+                const blob = new Blob([generatedContentCache], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                saveModal.classList.remove('active');
+                showToast('Situations saved successfully.', true);
+            });
+        });
+    </script>
+
+    <!-- Modals -->
+    <div id="generate-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">Generate Situations</div>
+            <div class="modal-body">
+                <div class="input-group">
+                    <label>Topic</label>
+                    <input type="text" id="gen-topic" class="input-control" placeholder="e.g. Healthcare logistics">
+                </div>
+                <div class="input-group">
+                    <label>Number of Situations</label>
+                    <input type="number" id="gen-number" class="input-control" value="1" min="1">
+                </div>
+                <div class="input-group">
+                    <label>Starting Number</label>
+                    <input type="number" id="gen-start" class="input-control" value="1" min="1">
+                </div>
+                <div class="input-group">
+                    <label>Stratum Level</label>
+                    <select id="gen-stratum" class="dropdown-control" style="width: 100%;">
+                        <option value="I">Stratum I (Task execution)</option>
+                        <option value="II">Stratum II (Service delivery)</option>
+                        <option value="III">Stratum III (System optimization)</option>
+                        <option value="IV">Stratum IV (Strategic development)</option>
+                        <option value="V">Stratum V (Strategic intent)</option>
+                        <option value="VI">Stratum VI (Corporate citizenship)</option>
+                        <option value="VII">Stratum VII (Corporate stewardship)</option>
+                        <option value="VIII">Stratum VIII (Super-corporate development)</option>
+                        <option value="IX">Stratum IX (Societal transformation)</option>
+                        <option value="X">Stratum X (Global ecosystem stewardship)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="gen-cancel-btn" class="btn btn-secondary">Cancel</button>
+                <button id="gen-submit-btn" class="btn btn-primary">Generate</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="save-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">Save Situations</div>
+            <div class="modal-body">
+                <p class="subtitle">You generated multiple situations. Please specify a file name to save them.</p>
+                <div class="input-group">
+                    <label>File Name</label>
+                    <input type="text" id="save-filename" class="input-control" value="situations.txt">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="save-submit-btn" class="btn btn-primary">Save File</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
