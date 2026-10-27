@@ -139,8 +139,12 @@
 
     <div id="inputModal" class="modal-overlay" style="display: flex;">
         <div class="modal-box">
-            <h2 style="margin:0; color:#111827;">Load Map Data</h2>
-            <p style="margin:0; color:#6B7280; font-size:14px;">Paste the JSON from Gemini below:</p>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="margin:0; color:#111827;">Load Map Data</h2>
+                <button type="button" id="loadFileBtn" class="secondary" style="padding: 8px 14px; font-size: 13px;">Choose JSON File...</button>
+                <input type="file" id="jsonFileInput" accept=".json,application/json" style="display: none;">
+            </div>
+            <p style="margin:0; color:#6B7280; font-size:14px;">Select a JSON file above, drag &amp; drop it here, or paste the JSON from Gemini below:</p>
             <textarea id="jsonInput" placeholder='{ "nodes": [...], "edges": [...] }' spellcheck="false"></textarea>
             <button id="visualizeBtn">VISUALIZE MODEL</button>
         </div>
@@ -199,6 +203,37 @@
         document.getElementById('visualizeBtn').addEventListener('click', parseAndRun);
         document.getElementById('cancelSaveBtn').addEventListener('click', function() {
             document.getElementById('saveModal').style.display = 'none';
+        });
+
+        const fileInput = document.getElementById('jsonFileInput');
+        function loadJsonFile(file) {
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                document.getElementById('jsonInput').value = event.target.result;
+                parseAndRun();
+            };
+            reader.readAsText(file);
+        }
+
+        document.getElementById('loadFileBtn').addEventListener('click', () => {
+            fileInput.value = '';
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            loadJsonFile(e.target.files[0]);
+        });
+
+        const inputModal = document.getElementById('inputModal');
+        inputModal.addEventListener('dragover', (e) => {
+            e.preventDefault();
+        });
+        inputModal.addEventListener('drop', (e) => {
+            if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                e.preventDefault();
+                loadJsonFile(e.dataTransfer.files[0]);
+            }
         });
 
         // --- 0. AUTO-LOADER ---
