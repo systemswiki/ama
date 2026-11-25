@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0d0f12">
+  <title>Pithy Search v1.1</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/@phosphor-icons/web@2.0.3"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              bg: '#0d0f12',
+              card: '#161920',
+              cardBorder: '#262b36',
+              accent: '#f59e0b',
+              text: '#f3f4f6',
+              muted: '#94a3b8'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      min-height: 100%;
+      background-color: #0d0f12;
+      color: #f3f4f6;
+    }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="min-h-screen bg-brand-bg text-zinc-100 font-sans flex flex-col">
+
+  <!-- STICKY HEADER & SEARCH BAR -->
+  <header class="sticky top-0 z-30 bg-brand-bg/95 backdrop-blur-md border-b border-brand-cardBorder/80">
+    <!-- Top Row: Brand & Open JSON -->
+    <div class="px-4 pt-3 pb-2 flex items-center justify-between gap-2">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <div class="w-7 h-7 flex-shrink-0 rounded-lg bg-gradient-to-tr from-amber-600 to-amber-400 flex items-center justify-center shadow-md shadow-amber-500/20 text-black font-black text-xs">
+          <i class="ph-bold ph-feather"></i>
+        </div>
+        <div class="min-w-0">
+          <h1 class="text-xs font-bold tracking-wider uppercase text-zinc-200 flex items-center gap-1.5">
+            <span>Pithy Pocket</span>
+            <span class="text-[9px] font-mono font-normal px-1.5 py-0.2 rounded bg-zinc-800 text-amber-400/90 border border-zinc-700/70">v1.1</span>
+          </h1>
+          <p id="repo-status" class="text-[11px] text-zinc-400 truncate">0 notes • Sample set</p>
+        </div>
+      </div>
+
+      <button
+        id="open-json-btn"
+        type="button"
+        class="px-3 py-2 rounded-xl bg-amber-500 active:bg-amber-400 text-black font-bold text-xs flex items-center gap-1.5 shadow-md shadow-amber-500/15 flex-shrink-0"
+      >
+        <i class="ph-bold ph-folder-open text-sm"></i>
+        <span>Load JSON</span>
+      </button>
+      <input type="file" id="json-file-input" accept=".json,application/json" class="hidden">
+    </div>
+
+    <!-- Search Input -->
+    <div class="px-4 pb-2">
+      <div class="relative flex items-center bg-brand-card border border-brand-cardBorder focus-within:border-amber-500/70 rounded-xl px-3 py-2.5 transition-colors">
+        <i class="ph-bold ph-magnifying-glass text-amber-400 text-base mr-2.5 flex-shrink-0"></i>
+        <input
+          type="search"
+          id="search-input"
+          autocomplete="off"
+          autocorrect="off"
+          spellcheck="false"
+          placeholder="Search titles, synthesis, #tags, sources..."
+          class="w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-500 outline-none"
+        >
+        <button
+          id="search-clear-btn"
+          type="button"
+          class="hidden ml-2 p-1 text-zinc-400 active:text-white flex-shrink-0"
+          aria-label="Clear search"
+        >
+          <i class="ph-bold ph-x text-sm"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Scrollable Tag Filter Chips -->
+    <div id="tag-chips-bar" class="px-4 pb-2.5 flex items-center gap-1.5 overflow-x-auto no-scrollbar"></div>
+  </header>
+
+  <!-- RESULTS FEED -->
+  <main class="flex-1 px-4 pt-3 pb-16 max-w-xl w-full mx-auto">
+    <div class="flex items-center justify-between text-[11px] text-zinc-500 pb-2">
+      <span id="results-summary">Showing all notes</span>
+      <button id="reset-filters-btn" type="button" class="hidden text-amber-400 font-semibold">Reset</button>
+    </div>
+    <div id="results-list" class="space-y-3"></div>
+  </main>
+
+  <!-- TOAST -->
+  <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-zinc-800 border border-zinc-700 text-xs text-zinc-100 rounded-full shadow-2xl opacity-0 transition-opacity duration-200 pointer-events-none flex items-center gap-2 max-w-[90vw]">
+    <i class="ph-bold ph-check text-amber-400 flex-shrink-0"></i>
+    <span id="toast-text" class="truncate">Copied</span>
+  </div>
+
+  <script>
+    const STORAGE_NOTES_KEY = "pithy_pocket_notes_v1";
+    const STORAGE_FILENAME_KEY = "pithy_pocket_filename_v1";
+
+    const SAMPLE_NOTES = [
+      {
+        id: "pithy-sample-1",
+        title: "Feedback Primacy in Complex Dynamics",
+        pithy: "Feedback loops dictate system behavior, overriding linear cause-and-effect through circular causality. Delays between structural actions and visible outcomes systematically mislead actors into treating superficial symptoms. Sustainable intervention requires altering structural feedback topologies rather than pushing harder against downstream inertia.",
+        reference: "Peter Senge, The Fifth Discipline",
+        tags: ["systems", "feedback", "dynamics"],
+        thoughts: "Key inquiry anchor: whenever an organization pushes harder on a metric and gets diminishing returns, look for the hidden balancing loop and its temporal delay.",
+        created: Date.now() - 86400000 * 2
+      },
+      {
+        id: "pithy-sample-2",
+        title: "Observer Inseparability in Epistemology",
+        pithy: "Second-order cybernetics establishes that every observation actively includes the cognitive boundaries and intent of the observer. Detached objectivity collapses once a modeler acknowledges that their questions construct the boundaries of the observed system. Rigorous inquiry demands modeling both the perceived system and the observer's framing biases.",
+        reference: "Heinz von Foerster",
+        tags: ["cybernetics", "epistemology", "systems"],
+        thoughts: "",
+        created: Date.now() - 86400000
+      },
+      {
+        id: "pithy-sample-3",
+        title: "Requisite Variety and Adaptive Control",
+        pithy: "Ashby's Law dictates that an effective control system must possess at least as much internal variety as the environmental disturbances it aims to govern. Reducing operational complexity below environmental unpredictability induces catastrophic systemic blindness. Viable survival requires cultivating continuous internal flexibility rather than relying on brittle procedural standardization.",
+        reference: "W. Ross Ashby & Stafford Beer",
+        tags: ["cybernetics", "complexity", "viability"],
+        thoughts: "",
+        created: Date.now() - 3600000 * 12
+      }
+    ];
+
+    const STOP_WORDS = new Set([
+      "a","about","above","after","again","against","all","am","an","and","any","are","as","at","be","because","been","before","being","below",
+      "between","both","but","by","can","could","did","do","does","doing","down","during","each","few","for","from","further","had","has","have",
+      "having","he","her","here","hers","him","his","how","i","if","in","into","is","it","its","itself","let","me","more","most","my","myself",
+      "no","nor","not","of","off","on","once","only","or","other","ought","our","ours","out","over","own","same","she","should","so","some","such",
+      "than","that","the","their","theirs","them","then","there","these","they","this","those","through","to","too","under","until","up","very",
+      "was","we","were","what","when","where","which","while","who","whom","why","with","would","you","your","yours"
+    ]);
+
+    let notes = [];
+    let loadedFileName = "";
+    let searchQuery = "";
+    let activeTag = "";
+    let cachedVectors = [];
+    let cachedDf = {};
+    let cachedN = 0;
+
+    // --- NORMALIZATION & FORMATTING ---
+    function normalizeTags(tagInput) {
+      const arr = Array.isArray(tagInput) ? tagInput : String(tagInput || "").split(",");
+      const cleaned = arr
+        .map(t => t.trim().toLowerCase().replace(/^#/, "").replace(/\s+/g, "-"))
+        .filter(Boolean);
+      return [...new Set(cleaned)].slice(0, 3);
+    }
+
+    function normalizeNote(raw, idx = 0) {
+      const src = (raw && typeof raw === "object") ? raw : {};
+      return {
+        id: (typeof src.id === "string" && src.id.trim()) ? src.id.trim() : `note-${Date.now()}-${idx}`,
+        title: String(src.title || src.heading || "Untitled Note").trim(),
+        pithy: String(src.pithy || src.synthesis || src.summary || "").trim(),
+        reference: String(src.reference || src.source || "").trim(),
+        tags: normalizeTags(src.tags),
+        thoughts: String(src.thoughts || src.notes || "").trim(),
+        created: Number(src.created) || Date.now()
+      };
+    }
+
+    function splitSentences(text) {
+      if (!text || !text.trim()) return [];
+      const placeholders = [];
+      let protectedText = text.trim()
+        .replace(/\b(?:e\.g|i\.e|et\s+al|vs|etc|cf|approx|dept|est|fig|no|vol|pp|ed|eds|trans|rev|prof|dr|mr|mrs|ms|sr|jr|st)\./gi, m => {
+          const token = `__ABBR_${placeholders.length}__`;
+          placeholders.push(m);
+          return token;
+        })
+        .replace(/\b([A-Z])\.(?=\s+[A-Z])/g, (_, initial) => {
+          const token = `__ABBR_${placeholders.length}__`;
+          placeholders.push(`${initial}.`);
+          return token;
+        });
+
+      const parts = protectedText.match(/[^.!?]+[.!?]+(?=\s|$)|[^.!?]+$/g) || [];
+      return parts.map(p => {
+        let restored = p.trim();
+        placeholders.forEach((orig, i) => {
+          restored = restored.replace(`__ABBR_${i}__`, orig);
+        });
+        return restored;
+      }).filter(Boolean);
+    }
+
+    function formatPithyForPlainText(pithyText) {
+      const trimmed = String(pithyText || "").trim();
+      if (!trimmed) return "";
+      const sentences = splitSentences(trimmed);
+      if (sentences.length >= 2) {
+        return sentences.map((s, i) => `${i + 1}. ${s}`).join("\n");
+      }
+      return trimmed;
+    }
+
+    function formatNoteAsPlainText(n) {
+      const blocks = [];
+      if (n.title) blocks.push(n.title.trim());
+      const formattedPithy = formatPithyForPlainText(n.pithy);
+      if (formattedPithy) blocks.push(formattedPithy);
+      if (n.reference) blocks.push(n.reference.trim());
+      const tagsLine = normalizeTags(n.tags).map(t => `#${t}`).join(" ");
+      if (tagsLine) blocks.push(tagsLine);
+      return blocks.join("\n\n");
+    }
+
+    // --- HYBRID LEXICAL + COSINE SEARCH ENGINE ---
+    function tokenize(text) {
+      return (text || "")
+        .toLowerCase()
+        .replace(/[^\w\s-]/g, " ")
+        .split(/\s+/)
+        .filter(w => w.length > 2 && !STOP_WORDS.has(w));
+    }
+
+    function rebuildIndex() {
+      const docs = notes.map(n => tokenize(`${n.title} ${n.title} ${n.pithy}`));
+      const df = {};
+      docs.forEach(tokens => new Set(tokens).forEach(w => df[w] = (df[w] || 0) + 1));
+      const N = notes.length;
+      cachedDf = df;
+      cachedN = N;
+      cachedVectors = docs.map(tokens => {
+        const tf = {};
+        tokens.forEach(w => tf[w] = (tf[w] || 0) + 1);
+        const vec = {};
+        let normSq = 0;
+        for (const w in tf) {
+          const idf = Math.log(1 + (N / (df[w] || 1)));
+          const weight = (tf[w] / tokens.length) * idf;
+          vec[w] = weight;
+          normSq += weight * weight;
+        }
+        return { vec, norm: Math.sqrt(normSq) || 1e-6 };
+      });
+    }
+
+    function vectorizeQuery(queryText) {
+      const qTokens = tokenize(queryText);
+      if (!qTokens.length) return null;
+      const tf = {};
+      qTokens.forEach(w => tf[w] = (tf[w] || 0) + 1);
+      const vec = {};
+      let normSq = 0;
+      for (const w in tf) {
+        const idf = Math.log(1 + (cachedN / (cachedDf[w] || 1)));
+        const weight = (tf[w] / qTokens.length) * idf;
+        vec[w] = weight;
+        normSq += weight * weight;
+      }
+      return { vec, norm: Math.sqrt(normSq) || 1e-6 };
+    }
+
+    function cosine(v1, v2) {
+      if (!v1 || !v2) return 0;
+      let dot = 0;
+      const [small, big] = Object.keys(v1.vec).length < Object.keys(v2.vec).length ? [v1.vec, v2.vec] : [v2.vec, v1.vec];
+      for (const k in small) {
+        if (big[k]) dot += small[k] * big[k];
+      }
+      return Math.max(0, Math.min(1, dot / (v1.norm * v2.norm)));
+    }
+
+    function rankNotes(rawQuery) {
+      const q = (rawQuery || "").trim().toLowerCase();
+      if (!q) {
+        return notes.map(n => ({ note: n, score: 1, matchType: "" }));
+      }
+
+      const isTagOnly = q.startsWith("#") && !q.includes(" ");
+      const cleanTag = q.replace(/^#/, "");
+      const qVec = vectorizeQuery(q);
+
+      return notes
+        .map((n, idx) => {
+          const titleL = n.title.toLowerCase();
+          const pithyL = n.pithy.toLowerCase();
+          const thoughtsL = n.thoughts.toLowerCase();
+          const refL = n.reference.toLowerCase();
+          const tags = n.tags || [];
+
+          if (isTagOnly) {
+            const exact = tags.includes(cleanTag);
+            const partial = tags.some(t => t.includes(cleanTag));
+            if (!exact && !partial) return null;
+            return { note: n, score: exact ? 2 : 1.5, matchType: "tag" };
+          }
+
+          let score = 0;
+          let matchType = "related";
+
+          if (tags.some(t => t === cleanTag || t.includes(q))) { score += 1.4; matchType = "tag"; }
+          if (titleL.includes(q)) { score += 1.3; matchType = "title"; }
+          if (refL.includes(q)) { score += 1.0; matchType = "source"; }
+          if (pithyL.includes(q)) { score += 0.9; matchType = "text"; }
+          if (thoughtsL.includes(q)) { score += 0.85; matchType = "thoughts"; }
+
+          const sem = qVec ? cosine(qVec, cachedVectors[idx]) : 0;
+          if (sem > 0.05) score += sem;
+
+          if (score <= 0) return null;
+          return { note: n, score, matchType };
+        })
+        .filter(Boolean)
+        .sort((a, b) => b.score - a.score);
+    }
+
+    // --- CLIPBOARD & SHARE ---
+    async function copyPlainText(note) {
+      const formatted = formatNoteAsPlainText(note);
+      if (!formatted) return;
+
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(formatted);
+        } else {
+          const ta = document.createElement("textarea");
+          ta.value = formatted;
+          ta.setAttribute("readonly", "");
+          ta.style.position = "fixed";
+          ta.style.opacity = "0";
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand("copy");
+          document.body.removeChild(ta);
+        }
+        showToast(`Copied: ${note.title}`);
+      } catch (err) {
+        showToast("Could not copy to clipboard");
+      }
+    }
+
+    async function sharePlainText(note) {
+      const formatted = formatNoteAsPlainText(note);
+      if (navigator.share) {
+        try {
+          await navigator.share({ title: note.title, text: formatted });
+        } catch (err) {
+          if (err.name !== "AbortError") copyPlainText(note);
+        }
+      } else {
+        copyPlainText(note);
+      }
+    }
+
+    // --- RENDERING ---
+    const repoStatusEl = document.getElementById("repo-status");
+    const tagChipsBar = document.getElementById("tag-chips-bar");
+    const resultsList = document.getElementById("results-list");
+    const resultsSummary = document.getElementById("results-summary");
+    const resetFiltersBtn = document.getElementById("reset-filters-btn");
+
+    function updateStatus() {
+      const sourceLabel = loadedFileName ? loadedFileName : "Sample notes (tap Load JSON)";
+      repoStatusEl.innerText = `${notes.length} note${notes.length === 1 ? "" : "s"} • ${sourceLabel}`;
+    }
+
+    function renderTagChips() {
+      const allTags = [...new Set(notes.flatMap(n => n.tags || []))].sort();
+      tagChipsBar.innerHTML = "";
+      if (!allTags.length) return;
+
+      const allBtn = document.createElement("button");
+      allBtn.type = "button";
+      allBtn.className = !activeTag
+        ? "px-3 py-1 rounded-full bg-amber-500 text-black font-bold text-xs flex-shrink-0"
+        : "px-3 py-1 rounded-full bg-zinc-800 text-zinc-300 text-xs flex-shrink-0";
+      allBtn.innerText = `All (${notes.length})`;
+      allBtn.addEventListener("click", () => {
+        activeTag = "";
+        renderAll();
+      });
+      tagChipsBar.appendChild(allBtn);
+
+      allTags.forEach(tag => {
+        const isSelected = activeTag === tag;
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = isSelected
+          ? "px-3 py-1 rounded-full bg-amber-500 text-black font-bold text-xs font-mono flex-shrink-0"
+          : "px-3 py-1 rounded-full bg-zinc-800/90 border border-zinc-700/80 text-zinc-300 text-xs font-mono flex-shrink-0";
+        btn.innerText = `#${tag}`;
+        btn.addEventListener("click", () => {
+          activeTag = isSelected ? "" : tag;
+          renderAll();
+        });
+        tagChipsBar.appendChild(btn);
+      });
+    }
+
+    function escapeHtml(str) {
+      return String(str || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function formatReferenceHtml(refStr) {
+      const urlRegex = /(https?:\/\/[^\s<>"')]+)/gi;
+      return String(refStr || "").split(urlRegex).map(part => {
+        if (/^https?:\/\//i.test(part)) {
+          const safe = escapeHtml(part);
+          return `<a href="${safe}" target="_blank" rel="noopener noreferrer" class="text-amber-400 underline break-all">${safe}</a>`;
+        }
+        return escapeHtml(part);
+      }).join("");
+    }
+
+    function renderResults() {
+      let ranked = rankNotes(searchQuery);
+      if (activeTag) {
+        ranked = ranked.filter(r => (r.note.tags || []).includes(activeTag));
+      }
+
+      const hasFilter = Boolean(searchQuery.trim() || activeTag);
+      resetFiltersBtn.classList.toggle("hidden", !hasFilter);
+      resultsSummary.innerText = hasFilter
+        ? `${ranked.length} matching note${ranked.length === 1 ? "" : "s"}`
+        : `Showing all ${ranked.length} notes`;
+
+      if (!ranked.length) {
+        resultsList.innerHTML = `
+          <div class="py-14 text-center text-xs text-zinc-500 bg-brand-card/50 border border-brand-cardBorder rounded-2xl px-4">
+            No notes match your current filter.
+          </div>
+        `;
+        return;
+      }
+
+      const canShare = Boolean(navigator.share);
+      resultsList.innerHTML = "";
+
+      ranked.forEach(({ note: n, matchType, score }) => {
+        const sentences = splitSentences(n.pithy);
+        const hasThoughts = Boolean(n.thoughts && n.thoughts.trim());
+        const badgeHtml = (searchQuery.trim() && matchType)
+          ? (matchType === "related"
+            ? `<span class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">${Math.min(99, Math.round(score * 100))}%</span>`
+            : `<span class="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-800 text-amber-400 border border-zinc-700">${matchType}</span>`)
+          : "";
+
+        const bodyHtml = sentences.length >= 2
+          ? `<div class="text-[13px] text-zinc-200 leading-relaxed space-y-1.5 font-serif select-text">
+              ${sentences.map((s, i) => `<p><span class="text-amber-400/90 font-mono font-bold text-[11px] mr-1.5">${i + 1}</span>${escapeHtml(s)}</p>`).join("")}
+            </div>`
+          : `<p class="text-[13px] text-zinc-200 leading-relaxed font-serif select-text">${escapeHtml(n.pithy)}</p>`;
+
+        const card = document.createElement("article");
+        card.className = "p-4 rounded-2xl bg-brand-card border border-brand-cardBorder shadow-lg flex flex-col gap-3";
+        card.innerHTML = `
+          <div class="flex items-start justify-between gap-2">
+            <h2 class="text-sm font-bold text-zinc-100 leading-snug select-text">${escapeHtml(n.title)}</h2>
+            ${badgeHtml}
+          </div>
+
+          ${bodyHtml}
+
+          ${n.reference ? `
+            <div class="pt-2 border-t border-brand-cardBorder/70 flex items-start gap-1.5 text-xs text-zinc-400 select-text">
+              <i class="ph ph-books text-amber-400 text-sm mt-0.5 flex-shrink-0"></i>
+              <span class="italic leading-snug">${formatReferenceHtml(n.reference)}</span>
+            </div>
+          ` : ""}
+
+          ${hasThoughts ? `
+            <div class="rounded-xl bg-black/35 border border-zinc-800/90 overflow-hidden">
+              <button type="button" class="toggle-thoughts-btn w-full px-3 py-2 flex items-center justify-between text-left text-[11px] font-semibold text-amber-300">
+                <span class="flex items-center gap-1.5">
+                  <i class="ph-bold ph-chat-teardrop-text"></i>
+                  <span>My Thoughts</span>
+                </span>
+                <i class="ph-bold ph-caret-down thoughts-caret transition-transform"></i>
+              </button>
+              <div class="thoughts-body hidden px-3 pb-2.5 text-xs text-zinc-300 leading-relaxed whitespace-pre-wrap border-t border-zinc-800/70 pt-2 select-text">${escapeHtml(n.thoughts)}</div>
+            </div>
+          ` : ""}
+
+          <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+            <div class="flex flex-wrap gap-1.5">
+              ${(n.tags || []).map(t => `
+                <button type="button" data-tag="${escapeHtml(t)}" class="card-tag-btn px-2 py-1 rounded-lg bg-zinc-800/90 active:bg-amber-500/20 border border-zinc-700/70 text-[11px] font-mono text-zinc-300">
+                  #${escapeHtml(t)}
+                </button>
+              `).join("")}
+            </div>
+
+            <div class="flex items-center gap-2 ml-auto">
+              ${canShare ? `
+                <button type="button" class="share-btn px-3 py-2 rounded-xl bg-zinc-800 active:bg-zinc-700 border border-zinc-700 text-zinc-200 text-xs font-semibold flex items-center gap-1.5">
+                  <i class="ph-bold ph-share-network text-amber-400"></i>
+                  <span>Share</span>
+                </button>
+              ` : ""}
+              <button type="button" class="copy-btn px-3.5 py-2 rounded-xl bg-amber-500 active:bg-amber-400 text-black text-xs font-bold flex items-center gap-1.5 shadow-sm">
+                <i class="ph-bold ph-copy"></i>
+                <span>Copy Text</span>
+              </button>
+            </div>
+          </div>
+        `;
+
+        card.querySelector(".copy-btn").addEventListener("click", () => copyPlainText(n));
+        if (canShare) {
+          card.querySelector(".share-btn").addEventListener("click", () => sharePlainText(n));
+        }
+
+        card.querySelectorAll(".card-tag-btn").forEach(btn => {
+          btn.addEventListener("click", () => {
+            activeTag = activeTag === btn.dataset.tag ? "" : btn.dataset.tag;
+            renderAll();
+          });
+        });
+
+        const toggleThoughtsBtn = card.querySelector(".toggle-thoughts-btn");
+        if (toggleThoughtsBtn) {
+          const thoughtsBody = card.querySelector(".thoughts-body");
+          const caret = card.querySelector(".thoughts-caret");
+          toggleThoughtsBtn.addEventListener("click", () => {
+            const isHidden = thoughtsBody.classList.contains("hidden");
+            thoughtsBody.classList.toggle("hidden", !isHidden);
+            caret.style.transform = isHidden ? "rotate(180deg)" : "rotate(0deg)";
+          });
+        }
+
+        resultsList.appendChild(card);
+      });
+    }
+
+    function renderAll() {
+      updateStatus();
+      renderTagChips();
+      renderResults();
+    }
+
+    // --- FILE LOADING & PERSISTENCE ---
+    const openJsonBtn = document.getElementById("open-json-btn");
+    const jsonFileInput = document.getElementById("json-file-input");
+
+    openJsonBtn.addEventListener("click", () => {
+      jsonFileInput.value = "";
+      jsonFileInput.click();
+    });
+
+    jsonFileInput.addEventListener("change", (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        try {
+          const parsed = JSON.parse(String(evt.target.result || "").trim());
+          const rawList = Array.isArray(parsed) ? parsed : [parsed];
+          const cleaned = rawList
+            .map((item, idx) => normalizeNote(item, idx))
+            .filter(item => item.pithy || item.title);
+
+          if (!cleaned.length) {
+            showToast("No Pithy notes found in JSON");
+            return;
+          }
+
+          notes = cleaned;
+          loadedFileName = file.name;
+          localStorage.setItem(STORAGE_NOTES_KEY, JSON.stringify(notes));
+          localStorage.setItem(STORAGE_FILENAME_KEY, loadedFileName);
+          rebuildIndex();
+          renderAll();
+          showToast(`Loaded ${notes.length} notes from ${file.name}`);
+        } catch (err) {
+          showToast("Invalid JSON file");
+        }
+      };
+      reader.readAsText(file);
+    });
+
+    // --- SEARCH INPUT EVENTS ---
+    const searchInput = document.getElementById("search-input");
+    const searchClearBtn = document.getElementById("search-clear-btn");
+
+    searchInput.addEventListener("input", (e) => {
+      searchQuery = e.target.value;
+      searchClearBtn.classList.toggle("hidden", !searchQuery);
+      renderResults();
+    });
+
+    searchClearBtn.addEventListener("click", () => {
+      searchQuery = "";
+      searchInput.value = "";
+      searchClearBtn.classList.add("hidden");
+      renderResults();
+      searchInput.focus();
+    });
+
+    resetFiltersBtn.addEventListener("click", () => {
+      searchQuery = "";
+      activeTag = "";
+      searchInput.value = "";
+      searchClearBtn.classList.add("hidden");
+      renderAll();
+    });
+
+    // --- TOAST ---
+    let toastTimer = null;
+    function showToast(msg) {
+      const toast = document.getElementById("toast");
+      document.getElementById("toast-text").innerText = msg;
+      toast.classList.remove("opacity-0");
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.add("opacity-0"), 2400);
+    }
+
+    // --- STARTUP ---
+    (function init() {
+      try {
+        const savedNotes = localStorage.getItem(STORAGE_NOTES_KEY);
+        const savedName = localStorage.getItem(STORAGE_FILENAME_KEY);
+        if (savedNotes) {
+          const parsed = JSON.parse(savedNotes);
+          if (Array.isArray(parsed) && parsed.length) {
+            notes = parsed.map((n, i) => normalizeNote(n, i));
+            loadedFileName = savedName || "Cached JSON";
+          }
+        }
+      } catch (_) {}
+
+      if (!notes.length) {
+        notes = SAMPLE_NOTES.map((n, i) => normalizeNote(n, i));
+      }
+
+      rebuildIndex();
+      renderAll();
+    })();
+  </script>
+</body>
+</html>
