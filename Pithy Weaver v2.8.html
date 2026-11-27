@@ -1,0 +1,2713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pithy Weaver v2.8</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/@phosphor-icons/web@2.0.3"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              bg: '#0d0f12',
+              card: '#161920',
+              cardBorder: '#262b36',
+              accent: '#f59e0b',
+              accentLight: 'rgba(245, 158, 11, 0.12)',
+              text: '#f3f4f6',
+              muted: '#94a3b8'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #0d0f12;
+      color: #f3f4f6;
+      overscroll-behavior: none;
+    }
+    .bg-dots {
+      background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+      background-size: 22px 22px;
+    }
+    .card-glow {
+      box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.85), 0 0 25px 2px rgba(245, 158, 11, 0.14);
+    }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="h-screen w-screen overflow-hidden flex flex-col font-sans select-none bg-brand-bg text-zinc-100">
+
+  <!-- TOP BAR -->
+  <header class="z-30 flex-shrink-0 px-4 py-2.5 flex items-center justify-between border-b border-brand-cardBorder/60 bg-brand-bg/90 backdrop-blur-md gap-3">
+    <div class="flex items-center gap-2.5 min-w-0">
+      <div class="w-7 h-7 flex-shrink-0 rounded-lg bg-gradient-to-tr from-amber-600 to-amber-400 flex items-center justify-center shadow-md shadow-amber-500/20 text-black font-black text-xs">
+        <i class="ph-bold ph-feather"></i>
+      </div>
+      <div class="truncate">
+        <h1 class="text-xs font-bold tracking-wider uppercase text-zinc-200 truncate flex items-center gap-1.5">
+          <span>Pithy Weaver</span>
+          <span class="text-[9px] font-mono font-normal px-1.5 py-0.2 rounded bg-zinc-800 text-amber-400/90 border border-zinc-700/70">v2.8</span>
+        </h1>
+        <p class="text-[10px] text-zinc-500 flex items-center gap-1.5 truncate">
+          <span id="sync-dot" class="w-1.5 h-1.5 rounded-full bg-zinc-500 flex-shrink-0"></span>
+          <span id="repo-count">0 notes</span>
+          <span id="file-sync-label" class="text-zinc-500 truncate"></span>
+        </p>
+      </div>
+    </div>
+
+    <!-- VIEW SWITCHER -->
+    <div class="flex items-center bg-brand-card border border-brand-cardBorder rounded-lg p-0.5 text-[11px] font-medium flex-shrink-0">
+      <button data-view="orbit" title="Orbit: Tag-weighted relationship resonance across syntheses" class="view-tab px-3 py-1 rounded-md flex items-center gap-1.5 transition-all bg-amber-500 text-black font-bold">
+        <i class="ph-bold ph-planet"></i>
+        <span>Orbit</span>
+      </button>
+      <button data-view="feed" title="Feed: Chronological & filtered card repository" class="view-tab px-3 py-1 rounded-md flex items-center gap-1.5 transition-all text-zinc-400 hover:text-zinc-200">
+        <i class="ph-bold ph-squares-four"></i>
+        <span>Feed</span>
+      </button>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex items-center gap-1.5 flex-shrink-0">
+      <button id="search-open-btn" title="Search Notes, Thoughts & Tags (/ or Ctrl+K)" class="px-2.5 py-1.5 rounded-lg bg-brand-card border border-brand-cardBorder text-zinc-300 hover:text-amber-400 hover:border-amber-500/40 active:scale-95 transition-all flex items-center gap-1.5 text-[11px]">
+        <i class="ph-bold ph-magnifying-glass text-xs text-amber-400"></i>
+        <span class="text-zinc-400">Search</span>
+        <kbd class="text-[9px] font-mono px-1 py-0.2 rounded bg-zinc-800 text-zinc-500 border border-zinc-700/70">/</kbd>
+      </button>
+      <button id="reconnect-file-btn" title="Reconnect saved repository JSON file" class="hidden px-2.5 py-1.5 rounded-lg bg-amber-500/15 border border-amber-500/50 text-amber-300 hover:bg-amber-500/25 text-[11px] font-semibold items-center gap-1.5 active:scale-95 transition-all max-w-[180px]">
+        <i class="ph-bold ph-plugs-connected flex-shrink-0"></i>
+        <span id="reconnect-file-name" class="truncate">Reconnect</span>
+      </button>
+      <button id="api-key-btn" title="API Key Settings" class="p-2 rounded-lg bg-brand-card border border-brand-cardBorder text-zinc-300 hover:text-white active:scale-95 transition-all">
+        <i class="ph ph-key text-sm"></i>
+      </button>
+      <button id="export-json-btn" title="Save / Link Repository JSON File" class="p-2 rounded-lg bg-brand-card border border-brand-cardBorder text-amber-400 hover:text-amber-300 active:scale-95 transition-all">
+        <i class="ph-bold ph-floppy-disk text-sm"></i>
+      </button>
+      <button id="import-json-btn" title="Open & Link Repository JSON File" class="p-2 rounded-lg bg-brand-card border border-brand-cardBorder text-zinc-300 hover:text-white active:scale-95 transition-all">
+        <i class="ph-bold ph-folder-open text-sm"></i>
+      </button>
+      <input type="file" id="json-file-input" accept=".json" class="hidden">
+    </div>
+  </header>
+
+  <!-- CANVAS / WORKSPACE -->
+  <main id="workspace-main" class="relative flex-1 min-h-0 w-full overflow-hidden bg-dots">
+
+    <!-- 1. EGO-CENTRIC RELATIONSHIP ORBIT VIEW -->
+    <div id="orbit-container" class="absolute inset-0 w-full h-full">
+      <canvas id="orbit-canvas" class="absolute inset-0 w-full h-full z-0 block"></canvas>
+      <div id="orbit-dom-layer" class="absolute inset-0 pointer-events-none z-10 overflow-hidden"></div>
+    </div>
+
+    <!-- 2. REPOSITORY FEED VIEW -->
+    <div id="feed-container" class="absolute inset-0 w-full h-full overflow-y-auto px-4 pt-4 pb-10 z-20 hidden bg-brand-bg">
+      <div class="max-w-2xl mx-auto space-y-3">
+        <!-- Feed Inline Search & Tag Filter Bar -->
+        <div class="sticky top-0 z-10 bg-brand-bg/95 backdrop-blur pb-2 pt-0.5">
+          <div class="relative flex items-center">
+            <i class="ph-bold ph-magnifying-glass absolute left-3 text-zinc-500 text-xs"></i>
+            <input
+              type="text"
+              id="feed-search-input"
+              placeholder="Filter cards by keyword, thoughts, #tag, or source..."
+              class="w-full bg-brand-card border border-brand-cardBorder focus:border-amber-500/70 rounded-xl pl-8 pr-8 py-2 text-xs text-zinc-100 placeholder-zinc-500 outline-none transition-colors"
+            >
+            <button id="feed-search-clear" class="hidden absolute right-2.5 text-zinc-500 hover:text-zinc-200 p-0.5" title="Clear filter">
+              <i class="ph-bold ph-x text-xs"></i>
+            </button>
+          </div>
+          <div id="feed-tag-chips" class="flex items-center gap-1.5 overflow-x-auto pt-2 pb-0.5 no-scrollbar"></div>
+        </div>
+        <div class="space-y-3" id="feed-list"></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- BOTTOM INTAKE BAR (WITH URL GROUNDING & MULTIMODAL FILE DRAG-AND-DROP) -->
+  <footer class="z-30 flex-shrink-0 w-full p-3 bg-brand-bg/95 backdrop-blur-md border-t border-brand-cardBorder/60">
+    <div id="intake-dropzone" class="relative max-w-2xl mx-auto flex flex-col gap-1.5 bg-brand-card border border-brand-cardBorder p-2.5 rounded-2xl shadow-2xl focus-within:border-amber-500/60 transition-all">
+
+      <!-- Drag-and-Drop Overlay -->
+      <div id="intake-drop-overlay" class="hidden absolute inset-0 z-20 rounded-2xl bg-amber-500/15 border-2 border-dashed border-amber-400 backdrop-blur-sm items-center justify-center pointer-events-none">
+        <div class="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-zinc-950/90 border border-amber-500/50 text-amber-300 text-xs font-semibold shadow-lg">
+          <i class="ph-bold ph-file-arrow-down text-sm text-amber-400"></i>
+          <span>Drop file (.txt, .md, .json, .html, .pdf) to distill or import</span>
+        </div>
+      </div>
+
+      <!-- Attached PDF Pill -->
+      <div id="attached-pdf-bar" class="hidden items-center justify-between gap-2 px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/40 text-[11px] text-amber-200">
+        <div class="flex items-center gap-1.5 truncate">
+          <i class="ph-bold ph-file-pdf text-amber-400 flex-shrink-0"></i>
+          <span id="attached-pdf-name" class="truncate font-medium">document.pdf</span>
+          <span id="attached-pdf-size" class="text-[10px] text-amber-400/75 font-mono flex-shrink-0"></span>
+        </div>
+        <button id="attached-pdf-clear" type="button" class="text-amber-300 hover:text-white p-0.5" title="Remove attached PDF">
+          <i class="ph-bold ph-x text-xs"></i>
+        </button>
+      </div>
+
+      <div class="flex items-start gap-2">
+        <textarea
+          id="intake-input"
+          rows="2"
+          placeholder="Paste passage, URL (article/YouTube), or drag & drop a file..."
+          class="w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-500 resize-none outline-none py-0.5 leading-relaxed font-sans"
+        ></textarea>
+        <div class="flex flex-col gap-1.5 flex-shrink-0">
+          <button
+            id="distill-btn"
+            class="h-9 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-semibold text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-amber-500/20 active:scale-95 transition-transform"
+          >
+            <span id="distill-btn-text">Distill</span>
+            <i class="ph-bold ph-sparkle"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between text-[10px] text-zinc-500 px-1 border-t border-zinc-800/60 pt-1.5 gap-2">
+        <span id="ai-status" class="truncate">Mode: Local NLP (Add API Key for AI Distill, PDF &amp; URL)</span>
+        <div class="flex items-center gap-2.5 flex-shrink-0">
+          <span id="url-detected-badge" class="hidden items-center gap-1 px-1.5 py-0.2 rounded bg-amber-500/15 border border-amber-500/40 text-amber-300 font-mono text-[9px]">
+            <i class="ph-bold ph-globe"></i> URL Ready
+          </span>
+          <button id="intake-browse-file-btn" type="button" class="text-zinc-400 hover:text-amber-300 font-medium flex items-center gap-1 transition-colors" title="Attach a text, markdown, PDF, or JSON file">
+            <i class="ph-bold ph-paperclip"></i>
+            <span>Drop/File</span>
+          </button>
+          <input type="file" id="intake-file-input" accept=".txt,.md,.markdown,.json,.csv,.html,.htm,.pdf,text/*,application/json,application/pdf" class="hidden">
+          <button id="manual-note-btn" class="text-amber-400 hover:text-amber-300 font-semibold underline">Manual Card</button>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- UNIVERSAL COMMAND SEARCH MODAL -->
+  <div id="search-modal" class="fixed inset-0 z-50 hidden items-start justify-center pt-20 p-4 bg-black/80 backdrop-blur-sm">
+    <div class="bg-brand-card border border-brand-cardBorder w-full max-w-xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[75vh]">
+      <div class="flex items-center gap-2.5 px-3.5 py-3 border-b border-brand-cardBorder bg-black/30">
+        <i class="ph-bold ph-magnifying-glass text-amber-400 text-base flex-shrink-0"></i>
+        <input
+          type="text"
+          id="global-search-input"
+          placeholder="Search titles, synthesis, my thoughts, #tags, or sources..."
+          class="w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-500 outline-none"
+        >
+        <button id="global-search-clear" class="hidden text-zinc-500 hover:text-zinc-200 p-1">
+          <i class="ph ph-x text-sm"></i>
+        </button>
+        <kbd class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 border border-zinc-700">ESC</kbd>
+      </div>
+      <div id="global-search-tags" class="px-3.5 py-2 border-b border-zinc-800/80 flex flex-wrap gap-1.5 bg-black/15 max-h-20 overflow-y-auto"></div>
+      <div id="global-search-results" class="overflow-y-auto divide-y divide-zinc-800/70 p-1.5 space-y-1"></div>
+    </div>
+  </div>
+
+  <!-- REVIEW, EDIT & JSON IMPORT MODAL (TWO-COLUMN DESKTOP WORKSPACE) -->
+  <div id="review-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+    <div class="bg-brand-card border border-brand-cardBorder w-full max-w-4xl min-h-[580px] max-h-[95vh] rounded-2xl p-5 shadow-2xl flex flex-col gap-3.5 overflow-y-auto" id="review-modal-card">
+      <div class="flex justify-between items-center pb-2 border-b border-brand-cardBorder/60">
+        <h3 id="review-modal-heading" class="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+          <i class="ph-bold ph-seal-check"></i> Review Pithy Note
+        </h3>
+        <div class="flex items-center gap-2">
+          <button type="button" id="modal-copy-text-btn" class="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-[10px] font-semibold text-zinc-200 hover:text-amber-300 flex items-center gap-1 transition-colors" title="Copy formatted text (title, numbered text, reference, tags)">
+            <i class="ph-bold ph-copy text-amber-400"></i>
+            <span>Copy Text</span>
+          </button>
+          <button id="review-close-btn" class="text-zinc-400 hover:text-white p-1">
+            <i class="ph ph-x text-base"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- TWO-COLUMN BODY: LEFT = PITHY SYNTHESIS, RIGHT = SCROLLABLE MY THOUGHTS -->
+      <div class="grid grid-cols-2 gap-5 items-stretch flex-1">
+
+        <!-- LEFT COLUMN: PITHY CARD FIELDS -->
+        <div class="flex flex-col gap-3">
+          <!-- PITHY SKILL JSON IMPORT BAR -->
+          <div class="bg-black/35 border border-zinc-800 rounded-xl p-2.5 flex flex-col gap-2">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
+                <i class="ph-bold ph-brackets-curly text-amber-400"></i> Pithy Skill JSON
+              </span>
+              <div class="flex items-center gap-1.5">
+                <button type="button" id="modal-upload-json-btn" class="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-[10px] font-semibold text-amber-400 flex items-center gap-1 transition-colors">
+                  <i class="ph-bold ph-upload-simple"></i>
+                  <span>Upload .json</span>
+                </button>
+                <button type="button" id="modal-toggle-paste-json-btn" class="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-[10px] font-semibold text-zinc-300 flex items-center gap-1 transition-colors">
+                  <i class="ph-bold ph-clipboard-text"></i>
+                  <span>Paste JSON</span>
+                </button>
+              </div>
+              <input type="file" id="modal-pithy-json-input" accept=".json,application/json,text/plain" class="hidden">
+            </div>
+
+            <!-- Collapsible Raw JSON Paste Drawer -->
+            <div id="modal-paste-json-drawer" class="hidden flex-col gap-1.5 pt-1.5 border-t border-zinc-800/80">
+              <textarea id="modal-paste-json-text" rows="3" placeholder='Paste Pithy skill JSON here, e.g. {"title":"...","pithy":"...","reference":"...","tags":["..."],"thoughts":"..."}' class="w-full bg-black/60 border border-zinc-800 rounded-lg p-2 text-[11px] font-mono text-zinc-200 outline-none focus:border-amber-500 resize-none"></textarea>
+              <div class="flex justify-end">
+                <button type="button" id="modal-apply-pasted-json-btn" class="px-3 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-bold text-[10px] flex items-center gap-1 transition-colors">
+                  <i class="ph-bold ph-arrow-down-left"></i>
+                  <span>Populate Card Fields</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-2.5">
+            <div>
+              <label class="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">Title</label>
+              <input type="text" id="modal-title" class="w-full mt-1 bg-black/40 border border-zinc-800 rounded-lg p-2 text-xs text-zinc-200 outline-none focus:border-amber-500">
+            </div>
+            <div>
+              <label class="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">Pithy Synthesis (Strict 3 Sentences)</label>
+              <textarea id="modal-pithy" rows="5" class="w-full mt-1 bg-black/40 border border-zinc-800 rounded-lg p-2 text-xs leading-relaxed text-zinc-200 outline-none focus:border-amber-500"></textarea>
+              <div class="flex justify-between text-[10px] text-zinc-500 mt-0.5">
+                <span id="sentence-count">Sentences: 3</span>
+                <span id="word-count">~55 words</span>
+              </div>
+            </div>
+            <div class="w-full">
+              <label class="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">Reference / Source</label>
+              <input type="text" id="modal-ref" placeholder="Author, book, or URL" class="w-full mt-1 bg-black/40 border border-zinc-800 rounded-lg p-2 text-xs text-zinc-200 outline-none focus:border-amber-500">
+            </div>
+            <div class="w-full">
+              <label class="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">Tags (1 to 3 canonical tags)</label>
+              <input type="text" id="modal-tags" placeholder="systems, feedback, dynamics" class="w-full mt-1 bg-black/40 border border-zinc-800 rounded-lg p-2 text-xs text-zinc-200 outline-none focus:border-amber-500">
+            </div>
+            <!-- Existing Tags Quick-Picker -->
+            <div>
+              <span class="text-[9px] uppercase font-bold text-zinc-500 tracking-wider block mb-1">Existing Repository Tags (Click to add):</span>
+              <div id="existing-tags-list" class="flex flex-wrap gap-1 max-h-16 overflow-y-auto"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT COLUMN: SCROLLABLE MY THOUGHTS DIALOGUE BOX -->
+        <div class="flex flex-col border-l border-brand-cardBorder/80 pl-5">
+          <div class="flex items-center justify-between mb-1">
+            <label for="modal-thoughts" class="text-[10px] uppercase font-bold text-amber-400 tracking-wider flex items-center gap-1.5">
+              <i class="ph-bold ph-chat-teardrop-text"></i>
+              <span>My Thoughts &amp; Reflections</span>
+            </label>
+            <span id="thoughts-word-count" class="text-[10px] text-zinc-500 font-mono">0 words</span>
+          </div>
+          <p class="text-[10px] text-zinc-500 mb-2 leading-snug">
+            Personal commentary, questions, or connections (excluded from Orbit scoring). Accessible via the <span class="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-amber-500/20 border border-amber-500/50 text-amber-300 font-mono font-bold text-[9px]">?</span> badge on each card.
+          </p>
+          <textarea
+            id="modal-thoughts"
+            placeholder="Write your reflections, critiques, or cross-domain connections here..."
+            class="flex-1 w-full min-h-[340px] bg-black/45 border border-zinc-800 focus:border-amber-500 rounded-xl p-3 text-xs leading-relaxed text-zinc-200 placeholder-zinc-600 outline-none resize-none overflow-y-auto select-text font-sans"
+          ></textarea>
+        </div>
+
+      </div>
+
+      <div class="flex gap-2 pt-2 border-t border-brand-cardBorder/60">
+        <button id="modal-delete-btn" class="px-3.5 py-2 bg-red-950/40 text-red-400 hover:text-red-300 border border-red-900/30 font-semibold text-xs rounded-xl active:scale-95 transition-transform hidden">Delete</button>
+        <button id="modal-commit-btn" class="flex-1 py-2 bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-1.5">
+          <span>Affix Note to Repository</span>
+          <i class="ph-bold ph-check"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FILE MERGE / REPLACE GUARD MODAL -->
+  <div id="merge-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+    <div class="bg-brand-card border border-brand-cardBorder w-full max-w-md rounded-2xl p-5 shadow-2xl flex flex-col gap-3">
+      <div class="flex items-center gap-2 text-amber-400">
+        <i class="ph-bold ph-git-merge text-base"></i>
+        <h3 class="text-xs font-bold uppercase tracking-wider">Repository Sync Conflict Guard</h3>
+      </div>
+      <p id="merge-modal-desc" class="text-xs text-zinc-300 leading-relaxed"></p>
+      <div class="flex gap-2 pt-1">
+        <button id="merge-cancel-btn" class="px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-semibold text-xs rounded-xl">Cancel</button>
+        <button id="merge-replace-btn" class="flex-1 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 font-semibold text-xs rounded-xl">Replace Local</button>
+        <button id="merge-combine-btn" class="flex-1 py-2 bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs rounded-xl">Merge &amp; Sync</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- API KEY MODAL -->
+  <div id="key-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+    <div class="bg-brand-card border border-brand-cardBorder w-full max-w-sm rounded-2xl p-5 shadow-2xl flex flex-col gap-3">
+      <h3 class="text-xs font-bold uppercase tracking-wider text-zinc-200">Gemini API Key</h3>
+      <p class="text-xs text-zinc-400 leading-relaxed">Add a key to enable automatic AI 3-sentence Pithy distillation, native PDF reading, and live URL grounding. Stored purely in your local browser.</p>
+      <input type="password" id="api-key-input" placeholder="AIzaSy..." class="w-full bg-black/40 border border-zinc-800 rounded-lg p-2 text-xs text-zinc-200 outline-none focus:border-amber-500 font-mono">
+      <div class="flex gap-2 pt-1">
+        <button id="key-cancel-btn" class="flex-1 py-2 bg-zinc-800 text-zinc-300 font-semibold text-xs rounded-xl">Cancel</button>
+        <button id="key-save-btn" class="flex-1 py-2 bg-amber-500 text-black font-bold text-xs rounded-xl">Save Key</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FLOATING MY THOUGHTS TOOLTIP POPOVER -->
+  <div id="thoughts-tooltip" class="fixed z-[60] hidden w-80 max-h-60 overflow-y-auto rounded-xl bg-zinc-950/95 border border-amber-500/60 p-3 shadow-2xl backdrop-blur-md select-text">
+    <div class="flex items-center justify-between pb-1.5 mb-1.5 border-b border-zinc-800">
+      <span class="text-[10px] font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1">
+        <i class="ph-bold ph-chat-teardrop-text"></i> My Thoughts
+      </span>
+      <span id="thoughts-tooltip-title" class="text-[10px] text-zinc-500 truncate max-w-[165px]"></span>
+    </div>
+    <div id="thoughts-tooltip-body" class="text-xs text-zinc-200 leading-relaxed whitespace-pre-wrap font-sans"></div>
+  </div>
+
+  <!-- TOAST -->
+  <div id="toast" class="fixed bottom-28 left-1/2 -translate-x-1/2 z-50 px-4 py-1.5 bg-zinc-800 border border-zinc-700 text-xs text-zinc-200 rounded-full shadow-2xl opacity-0 transition-opacity duration-300 pointer-events-none flex items-center gap-2 whitespace-nowrap max-w-[92vw]">
+    <i class="ph-bold ph-check text-amber-400 flex-shrink-0"></i>
+    <span id="toast-text" class="truncate">Message</span>
+  </div>
+
+  <!-- APPLICATION LOGIC -->
+  <script>
+    const APP_VERSION = "2.7";
+    const STORAGE_REPO_KEY = "pithy_notes_repo_v2_7";
+    const LEGACY_REPO_KEYS = ["pithy_notes_repo_v2_6", "pithy_notes_repo_v2_5", "pithy_notes_repo_v2_4", "pithy_notes_repo_v2_3", "pithy_notes_repo_v2_2"];
+    const STORAGE_API_KEY = "pithy_gemini_key_v2_7";
+    const LEGACY_API_KEYS = ["pithy_gemini_key_v2_6", "pithy_gemini_key_v2_5", "pithy_gemini_key_v2_4", "pithy_gemini_key_v2_3", "pithy_gemini_key_v2_2"];
+
+    // Canonical schema keys for Pithy Weaver notes (all other fields are stripped as extraneous)
+    const ALLOWED_NOTE_FIELDS = new Set([
+      "id",
+      "title",
+      "pithy",
+      "reference",
+      "tags",
+      "thoughts",
+      "created"
+    ]);
+
+    // --- 1. SEED REPOSITORY ---
+    const DEFAULT_PITHY_NOTES = [
+      {
+        id: "pithy-v2_7-1",
+        title: "Feedback Primacy in Complex Dynamics",
+        pithy: "Feedback loops dictate system behavior, overriding linear cause-and-effect through circular causality. Delays between structural actions and visible outcomes systematically mislead actors into treating superficial symptoms. Sustainable intervention requires altering structural feedback topologies rather than pushing harder against downstream inertia.",
+        reference: "Peter Senge, The Fifth Discipline",
+        tags: ["systems", "feedback", "dynamics"],
+        thoughts: "Key inquiry anchor: whenever an organization pushes harder on a metric and gets diminishing returns, look for the hidden balancing loop and its temporal delay.",
+        created: Date.now() - 1000 * 60 * 60 * 48
+      },
+      {
+        id: "pithy-v2_7-2",
+        title: "Observer Inseparability in Epistemology",
+        pithy: "Second-order cybernetics establishes that every observation actively includes the cognitive boundaries and intent of the observer. Detached objectivity collapses once a modeler acknowledges that their questions construct the boundaries of the observed system. Rigorous inquiry demands modeling both the perceived system and the observer's framing biases.",
+        reference: "Heinz von Foerster",
+        tags: ["cybernetics", "epistemology", "systems"],
+        thoughts: "",
+        created: Date.now() - 1000 * 60 * 60 * 36
+      },
+      {
+        id: "pithy-v2_7-3",
+        title: "Requisite Variety and Adaptive Control",
+        pithy: "Ashby's Law dictates that an effective control system must possess at least as much internal variety as the environmental disturbances it aims to govern. Reducing operational complexity below environmental unpredictability induces catastrophic systemic blindness. Viable survival requires cultivating continuous internal flexibility rather than relying on brittle procedural standardization.",
+        reference: "W. Ross Ashby & Stafford Beer",
+        tags: ["cybernetics", "complexity", "viability"],
+        thoughts: "",
+        created: Date.now() - 1000 * 60 * 60 * 24
+      },
+      {
+        id: "pithy-v2_7-4",
+        title: "Diminishing Returns on Socioeconomic Complexity",
+        pithy: "Societies resolve emerging socioeconomic strains by escalating administrative and institutional complexity. Each increment of bureaucratization yields progressively lower marginal returns while compounding overall energetic and maintenance overhead. Systemic collapse ensues when the resource cost of maintaining institutional complexity exceeds total sociopolitical capacity.",
+        reference: "Joseph Tainter, The Collapse of Complex Societies",
+        tags: ["complexity", "collapse", "institutions"],
+        thoughts: "",
+        created: Date.now() - 1000 * 60 * 60 * 18
+      },
+      {
+        id: "pithy-v2_7-5",
+        title: "Institutional Capture in Extractive Orders",
+        pithy: "Extractive sociopolitical institutions concentrate economic wealth and political decision-making in the hands of an entrenched narrow elite. This centralized monopoly suppresses creative destruction and innovation to forestall any shifts in the balance of power. Sustained prosperity emerges only when inclusive governance distributes participation and enforces open institutional contestability.",
+        reference: "Acemoglu & Robinson, Why Nations Fail",
+        tags: ["institutions", "governance", "economics"],
+        thoughts: "",
+        created: Date.now() - 1000 * 60 * 60 * 12
+      },
+      {
+        id: "pithy-v2_7-6",
+        title: "The Bounded Safe Zone of Doughnut Economics",
+        pithy: "Conventional economic models chase unchecked GDP growth while ignoring regenerative physical and ecological limits. Humanity must construct economies bounded from below by social foundations and from above by planetary ecological ceilings. Thriving stability requires shifting from extractive linear expansion to distributive, cyclical systemic balance.",
+        reference: "Kate Raworth, Doughnut Economics",
+        tags: ["economics", "sustainability", "systems"],
+        thoughts: "",
+        created: Date.now() - 1000 * 60 * 60 * 6
+      },
+      {
+        id: "pithy-v2_7-7",
+        title: "Externalized Cognition and Working Memory",
+        pithy: "Human working memory is severely constrained by finite cognitive bandwidth and rapid context degradation. Transcribing mental models into discrete, connected physical nodes externalizes processing load and frees conceptual bandwidth. Deliberate card synthesis converts fleeting intuitions into durable structural insights.",
+        reference: "Cognitive Science Note",
+        tags: ["cognition", "tools", "synthesis"],
+        thoughts: "This is the core rationale behind keeping every Pithy synthesis to three tight sentences while parking personal reflections alongside it.",
+        created: Date.now() - 1000 * 60 * 60 * 2
+      },
+      {
+        id: "pithy-v2_7-8",
+        title: "Reinforcing Loops and Archetypal Traps",
+        pithy: "System archetypes recur across organizations whenever reinforcing growth engines collide with unexamined balancing constraints. Treating recurring bottlenecks as isolated crises creates shifting-the-burden dependencies that atrophy internal capability. Lasting structural change emerges when leaders redesign the underlying information flows and rules.",
+        reference: "Donella Meadows, Thinking in Systems",
+        tags: ["systems", "feedback", "dynamics"],
+        thoughts: "",
+        created: Date.now() - 1000 * 60 * 30
+      }
+    ];
+
+    // --- ABBREVIATION-SAFE SENTENCE SPLITTER & NUMBERED RENDERER ---
+    function splitSentences(text) {
+      if (!text || !text.trim()) return [];
+      const placeholders = [];
+      let protectedText = text.trim();
+
+      protectedText = protectedText.replace(
+        /\b(?:e\.g|i\.e|et\s+al|vs|etc|cf|approx|dept|est|fig|no|vol|pp|ed|eds|trans|rev|prof|dr|mr|mrs|ms|sr|jr|st)\./gi,
+        (match) => {
+          const token = `__ABBR_${placeholders.length}__`;
+          placeholders.push(match);
+          return token;
+        }
+      );
+
+      protectedText = protectedText.replace(/\b([A-Z])\.(?=\s+[A-Z])/g, (_, initial) => {
+        const token = `__ABBR_${placeholders.length}__`;
+        placeholders.push(`${initial}.`);
+        return token;
+      });
+
+      const rawParts = protectedText.match(/[^.!?]+[.!?]+(?=\s|$)|[^.!?]+$/g) || [];
+      return rawParts
+        .map(part => {
+          let restored = part.trim();
+          placeholders.forEach((orig, idx) => {
+            restored = restored.replace(`__ABBR_${idx}__`, orig);
+          });
+          return restored;
+        })
+        .filter(Boolean);
+    }
+
+    function formatNumberedSentencesHtml(pithyText, { compact = false } = {}) {
+      const sentences = splitSentences(pithyText);
+      if (!sentences.length) return '';
+
+      if (compact) {
+        return sentences
+          .map((s, idx) => `<p class="truncate"><span class="text-amber-400/90 font-mono font-bold text-[10px] mr-1">${idx + 1}</span>${escapeHtml(s)}</p>`)
+          .join('');
+      }
+
+      return sentences
+        .map((s, idx) => `<p><span class="text-amber-400/90 font-mono font-bold text-[10px] mr-1">${idx + 1}</span>${escapeHtml(s)}</p>`)
+        .join('');
+    }
+
+    // --- 2. UNIFIED RELATIONSHIP SCORING ENGINE (TAGS PRIMARY + TITLE/PITHY DIFFERENTIATION) ---
+    const STOP_WORDS = new Set([
+      "a","about","above","after","again","against","all","am","an","and","any","are","as","at","be","because","been","before","being","below",
+      "between","both","but","by","can","could","did","do","does","doing","down","during","each","few","for","from","further","had","has","have",
+      "having","he","her","here","hers","him","his","how","i","if","in","into","is","it","its","itself","let","me","more","most","my","myself",
+      "no","nor","not","of","off","on","once","only","or","other","ought","our","ours","out","over","own","same","she","should","so","some","such",
+      "than","that","the","their","theirs","them","then","there","these","they","this","those","through","to","too","under","until","up","very",
+      "was","we","were","what","when","where","which","while","who","whom","why","with","would","you","your","yours"
+    ]);
+
+    const TAG_WEIGHT = 0.65;
+    const DIFFERENTIATION_WEIGHT = 0.35;
+
+    class VectorEngine {
+      static _dirty = true;
+      static _cachedVectors = [];
+      static _cachedDf = {};
+      static _cachedN = 0;
+
+      static invalidate() {
+        this._dirty = true;
+      }
+
+      static tokenize(text) {
+        return (text || "")
+          .toLowerCase()
+          .replace(/[^\w\s-]/g, " ")
+          .split(/\s+/)
+          .filter(w => w.length > 2 && !STOP_WORDS.has(w));
+      }
+
+      static getDifferentiationText(n) {
+        return `${n.title || ''} ${n.title || ''} ${n.pithy || ''}`.trim();
+      }
+
+      static _rebuild(noteList) {
+        const docs = noteList.map(n => this.tokenize(this.getDifferentiationText(n)));
+        const df = {};
+        docs.forEach(tokens => {
+          new Set(tokens).forEach(w => df[w] = (df[w] || 0) + 1);
+        });
+
+        const N = noteList.length;
+        this._cachedDf = df;
+        this._cachedN = N;
+        this._cachedVectors = docs.map(tokens => {
+          const tf = {};
+          tokens.forEach(w => tf[w] = (tf[w] || 0) + 1);
+          const vec = {};
+          let normSq = 0;
+          for (let w in tf) {
+            const idf = Math.log(1 + (N / (df[w] || 1)));
+            const weight = (tf[w] / tokens.length) * idf;
+            vec[w] = weight;
+            normSq += weight * weight;
+          }
+          return { vec, norm: Math.sqrt(normSq) || 1e-6 };
+        });
+        this._dirty = false;
+      }
+
+      static calculateVectors(noteList) {
+        if (this._dirty || this._cachedVectors.length !== noteList.length) {
+          this._rebuild(noteList);
+        }
+        return this._cachedVectors;
+      }
+
+      static vectorizeQuery(queryText, noteList) {
+        const qTokens = this.tokenize(queryText);
+        if (!qTokens.length) return null;
+        if (this._dirty || this._cachedVectors.length !== noteList.length) {
+          this._rebuild(noteList);
+        }
+        const df = this._cachedDf;
+        const N = this._cachedN;
+        const tf = {};
+        qTokens.forEach(w => tf[w] = (tf[w] || 0) + 1);
+        const vec = {};
+        let normSq = 0;
+        for (let w in tf) {
+          const idf = Math.log(1 + (N / (df[w] || 1)));
+          const weight = (tf[w] / qTokens.length) * idf;
+          vec[w] = weight;
+          normSq += weight * weight;
+        }
+        return { vec, norm: Math.sqrt(normSq) || 1e-6 };
+      }
+
+      static cosine(v1, v2) {
+        if (!v1 || !v2) return 0;
+        let dot = 0;
+        const [small, big] = Object.keys(v1.vec).length < Object.keys(v2.vec).length ? [v1.vec, v2.vec] : [v2.vec, v1.vec];
+        for (let k in small) {
+          if (big[k]) dot += small[k] * big[k];
+        }
+        return Math.max(0, Math.min(1, dot / (v1.norm * v2.norm)));
+      }
+
+      static tagOverlapScore(tagsA = [], tagsB = []) {
+        const setA = new Set((tagsA || []).filter(Boolean));
+        const setB = new Set((tagsB || []).filter(Boolean));
+        if (!setA.size || !setB.size) return 0;
+
+        let shared = 0;
+        setA.forEach(tag => {
+          if (setB.has(tag)) shared++;
+        });
+        if (shared === 0) return 0;
+
+        const minCount = Math.min(setA.size, setB.size);
+        return shared / minCount;
+      }
+
+      static scoreRelationship(noteA, vecA, noteB, vecB) {
+        const tagScore = this.tagOverlapScore(noteA.tags, noteB.tags);
+        const textDiffScore = this.cosine(vecA, vecB);
+        const raw = (TAG_WEIGHT * tagScore) + (DIFFERENTIATION_WEIGHT * textDiffScore);
+        return Math.max(0, Math.min(0.99, raw));
+      }
+    }
+
+    // --- 3. INDEXEDDB HANDLE PERSISTENCE ---
+    const IDB_NAME = 'pithy_weaver_handles_v2_7';
+    const IDB_STORE = 'handles';
+    const IDB_KEY = 'repo_file_handle_v2_7';
+    const LEGACY_IDB_KEYS = ['repo_file_handle_v2_6', 'repo_file_handle_v2_5', 'repo_file_handle_v2_4', 'repo_file_handle_v2_3', 'repo_file_handle_v2_2'];
+
+    function openHandleDB() {
+      return new Promise((resolve, reject) => {
+        if (!window.indexedDB) return reject(new Error('IndexedDB unsupported'));
+        const req = indexedDB.open(IDB_NAME, 1);
+        req.onupgradeneeded = () => {
+          if (!req.result.objectStoreNames.contains(IDB_STORE)) {
+            req.result.createObjectStore(IDB_STORE);
+          }
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    async function persistFileHandle(handle) {
+      try {
+        const db = await openHandleDB();
+        await new Promise((resolve, reject) => {
+          const tx = db.transaction(IDB_STORE, 'readwrite');
+          tx.objectStore(IDB_STORE).put(handle, IDB_KEY);
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error);
+        });
+      } catch (e) {
+        console.warn('Could not persist handle to IndexedDB:', e);
+      }
+    }
+
+    async function loadPersistedFileHandle() {
+      try {
+        const db = await openHandleDB();
+        return await new Promise((resolve, reject) => {
+          const tx = db.transaction(IDB_STORE, 'readonly');
+          const store = tx.objectStore(IDB_STORE);
+          const req = store.get(IDB_KEY);
+          req.onsuccess = () => {
+            if (req.result) return resolve(req.result);
+            const tryLegacy = (idx) => {
+              if (idx >= LEGACY_IDB_KEYS.length) return resolve(null);
+              const legReq = store.get(LEGACY_IDB_KEYS[idx]);
+              legReq.onsuccess = () => legReq.result ? resolve(legReq.result) : tryLegacy(idx + 1);
+              legReq.onerror = () => tryLegacy(idx + 1);
+            };
+            tryLegacy(0);
+          };
+          req.onerror = () => reject(req.error);
+        });
+      } catch (e) {
+        return null;
+      }
+    }
+
+    // --- 4. APPLICATION STATE, STRICT SCHEMA SANITIZATION & MERGE GUARD ---
+    let notes = [];
+    let activeFocusId = null;
+    let currentView = 'orbit'; // 'orbit' | 'feed'
+    let apiKey = '';
+    let editingNoteId = null;
+    let activeFileHandle = null;
+    let pendingFileHandle = null;
+    let isWritingToFile = false;
+    let feedFilterQuery = '';
+    let feedActiveTag = '';
+    let pendingPdfAttachment = null;
+
+    // --- PLAIN-TEXT CLIPBOARD COPY (TITLE, NUMBERED TEXT, REFERENCE, #TAGS) ---
+    function formatNoteAsPlainText(noteLike) {
+      const n = noteLike || {};
+      const title = (n.title || '').trim();
+      const rawText = (n.pithy || '').trim();
+      const sentences = splitSentences(rawText);
+      const text = sentences.length
+        ? sentences.map((s, idx) => `${idx + 1} ${s}`).join('\n')
+        : rawText;
+      const reference = (n.reference || '').trim();
+      const tagsLine = normalizeTags(n.tags).map(t => `#${t}`).join(' ');
+
+      const blocks = [];
+      if (title) blocks.push(title);
+      if (text) blocks.push(text);
+      if (reference) blocks.push(reference);
+      if (tagsLine) blocks.push(tagsLine);
+
+      return blocks.join('\n\n');
+    }
+
+    async function copyNoteTextToClipboard(noteLike) {
+      const formatted = formatNoteAsPlainText(noteLike);
+      if (!formatted) {
+        showToast("Nothing to copy");
+        return;
+      }
+
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(formatted);
+        } else {
+          const ta = document.createElement('textarea');
+          ta.value = formatted;
+          ta.style.position = 'fixed';
+          ta.style.opacity = '0';
+          document.body.appendChild(ta);
+          ta.focus();
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+        }
+        showToast("Copied card text to clipboard");
+      } catch (err) {
+        console.error('Clipboard copy failed:', err);
+        showToast("Could not copy to clipboard");
+      }
+    }
+
+    // --- FLOATING MY THOUGHTS TOOLTIP POPOVER CONTROLLER ---
+    const thoughtsTooltip = document.getElementById('thoughts-tooltip');
+    const thoughtsTooltipTitle = document.getElementById('thoughts-tooltip-title');
+    const thoughtsTooltipBody = document.getElementById('thoughts-tooltip-body');
+    let tooltipHideTimer = null;
+
+    function showThoughtsTooltip(anchorEl, note) {
+      if (!note || !note.thoughts || !note.thoughts.trim()) return;
+      if (tooltipHideTimer) {
+        clearTimeout(tooltipHideTimer);
+        tooltipHideTimer = null;
+      }
+
+      thoughtsTooltipTitle.innerText = note.title || '';
+      thoughtsTooltipBody.innerText = note.thoughts.trim();
+      thoughtsTooltip.classList.remove('hidden');
+
+      const rect = anchorEl.getBoundingClientRect();
+      const tipW = thoughtsTooltip.offsetWidth || 320;
+      const tipH = thoughtsTooltip.offsetHeight || 160;
+      const margin = 12;
+
+      let left = rect.right + 8;
+      if (left + tipW > window.innerWidth - margin) {
+        left = rect.left - tipW - 8;
+      }
+      if (left < margin) {
+        left = Math.max(margin, Math.min(window.innerWidth - tipW - margin, rect.left + rect.width / 2 - tipW / 2));
+      }
+
+      let top = rect.top - 4;
+      if (top + tipH > window.innerHeight - margin) {
+        top = Math.max(margin, window.innerHeight - tipH - margin);
+      }
+      if (top < margin) {
+        top = margin;
+      }
+
+      thoughtsTooltip.style.left = `${Math.round(left)}px`;
+      thoughtsTooltip.style.top = `${Math.round(top)}px`;
+    }
+
+    function scheduleHideThoughtsTooltip() {
+      if (tooltipHideTimer) clearTimeout(tooltipHideTimer);
+      tooltipHideTimer = setTimeout(() => {
+        thoughtsTooltip.classList.add('hidden');
+      }, 160);
+    }
+
+    function hideThoughtsTooltipImmediately() {
+      if (tooltipHideTimer) {
+        clearTimeout(tooltipHideTimer);
+        tooltipHideTimer = null;
+      }
+      thoughtsTooltip.classList.add('hidden');
+    }
+
+    thoughtsTooltip.addEventListener('mouseenter', () => {
+      if (tooltipHideTimer) {
+        clearTimeout(tooltipHideTimer);
+        tooltipHideTimer = null;
+      }
+    });
+
+    thoughtsTooltip.addEventListener('mouseleave', () => {
+      scheduleHideThoughtsTooltip();
+    });
+
+    function bindThoughtsTrigger(btnEl, note) {
+      if (!btnEl) return;
+      if (!note || !note.thoughts || !note.thoughts.trim()) {
+        btnEl.classList.add('hidden');
+        btnEl.classList.remove('inline-flex');
+        return;
+      }
+      btnEl.classList.remove('hidden');
+      btnEl.classList.add('inline-flex');
+      btnEl.onmouseenter = () => showThoughtsTooltip(btnEl, note);
+      btnEl.onmouseleave = () => scheduleHideThoughtsTooltip();
+      btnEl.onclick = (e) => {
+        e.stopPropagation();
+        showThoughtsTooltip(btnEl, note);
+      };
+    }
+
+    function attachLongPress(element, onLongPress, duration = 500) {
+      let timer = null;
+      let startX = 0;
+      let startY = 0;
+      let triggered = false;
+
+      const clear = () => {
+        if (timer) {
+          clearTimeout(timer);
+          timer = null;
+        }
+      };
+
+      element.addEventListener('pointerdown', (e) => {
+        if (e.button !== undefined && e.button !== 0) return;
+        if (e.target.closest('a') || e.target.closest('.thoughts-trigger') || e.target.closest('.copy-text-btn')) return;
+        triggered = false;
+        startX = e.clientX;
+        startY = e.clientY;
+        timer = setTimeout(() => {
+          triggered = true;
+          timer = null;
+          onLongPress(e);
+        }, duration);
+      });
+
+      element.addEventListener('pointermove', (e) => {
+        if (!timer) return;
+        if (Math.hypot(e.clientX - startX, e.clientY - startY) > 8) {
+          clear();
+        }
+      });
+
+      element.addEventListener('pointerup', clear);
+      element.addEventListener('pointercancel', clear);
+      element.addEventListener('pointerleave', clear);
+
+      element.addEventListener('click', (e) => {
+        if (triggered) {
+          e.stopImmediatePropagation();
+          e.preventDefault();
+          triggered = false;
+        }
+      }, true);
+    }
+
+    function normalizeTags(tagInput) {
+      const arr = Array.isArray(tagInput) ? tagInput : String(tagInput || '').split(',');
+      const cleaned = arr
+        .map(t => t.trim().toLowerCase().replace(/^#/, '').replace(/\s+/g, '-'))
+        .filter(Boolean);
+      return [...new Set(cleaned)].slice(0, 3);
+    }
+
+    function normalizeCreatedTimestamp(val) {
+      if (typeof val === 'number' && Number.isFinite(val) && val > 0) return val;
+      if (typeof val === 'string' && val.trim()) {
+        const num = Number(val);
+        if (Number.isFinite(num) && num > 0) return num;
+        const parsed = Date.parse(val);
+        if (!Number.isNaN(parsed) && parsed > 0) return parsed;
+      }
+      return Date.now();
+    }
+
+    function sanitizeNoteObject(raw, fallbackIndex = 0) {
+      const src = (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw : {};
+      const hadExtraneous = Object.keys(src).some(k => !ALLOWED_NOTE_FIELDS.has(k));
+
+      const id = (typeof src.id === 'string' && src.id.trim())
+        ? src.id.trim()
+        : `pithy-v2_7-${Date.now()}-${fallbackIndex}`;
+      const title = typeof src.title === 'string'
+        ? src.title.trim()
+        : (typeof src.heading === 'string' ? src.heading.trim() : '');
+      const pithy = typeof src.pithy === 'string'
+        ? src.pithy.trim()
+        : (typeof src.synthesis === 'string' ? src.synthesis.trim() : '');
+      const reference = typeof src.reference === 'string'
+        ? src.reference.trim()
+        : (typeof src.source === 'string' ? src.source.trim() : '');
+      const tags = normalizeTags(src.tags);
+      const thoughts = typeof src.thoughts === 'string'
+        ? src.thoughts
+        : (typeof src.notes === 'string' ? src.notes : '');
+      const created = normalizeCreatedTimestamp(src.created);
+
+      return {
+        record: {
+          id,
+          title,
+          pithy,
+          reference,
+          tags,
+          thoughts,
+          created
+        },
+        hadExtraneous
+      };
+    }
+
+    function normalizeNoteRecord(raw, fallbackIndex = 0) {
+      return sanitizeNoteObject(raw, fallbackIndex).record;
+    }
+
+    function inspectImportedArray(arr) {
+      let strippedCount = 0;
+      const records = (arr || []).map((item, idx) => {
+        const { record, hadExtraneous } = sanitizeNoteObject(item, idx);
+        if (hadExtraneous) strippedCount++;
+        return record;
+      });
+      return { records, strippedCount };
+    }
+
+    function serializeNotesForOutput(noteList) {
+      return JSON.stringify((noteList || []).map((n, idx) => normalizeNoteRecord(n, idx)), null, 2);
+    }
+
+    function isSeedOnlyRepo(noteList) {
+      if (noteList.length !== DEFAULT_PITHY_NOTES.length) return false;
+      const defaultIds = new Set(DEFAULT_PITHY_NOTES.map(n => n.id));
+      return noteList.every(n => defaultIds.has(n.id));
+    }
+
+    function mergeNoteArrays(localArr, incomingArr) {
+      const byId = new Map();
+      const byTitle = new Set();
+
+      incomingArr.forEach((raw, idx) => {
+        const clean = normalizeNoteRecord(raw, idx);
+        byId.set(clean.id, clean);
+        byTitle.add((clean.title || '').trim().toLowerCase());
+      });
+
+      localArr.forEach((raw, idx) => {
+        const clean = normalizeNoteRecord(raw, idx);
+        const titleKey = (clean.title || '').trim().toLowerCase();
+        if (!byId.has(clean.id) && !byTitle.has(titleKey)) {
+          byId.set(clean.id, clean);
+          byTitle.add(titleKey);
+        }
+      });
+
+      return Array.from(byId.values()).sort((a, b) => (b.created || 0) - (a.created || 0));
+    }
+
+    const mergeModal = document.getElementById('merge-modal');
+    const mergeModalDesc = document.getElementById('merge-modal-desc');
+    const mergeCancelBtn = document.getElementById('merge-cancel-btn');
+    const mergeReplaceBtn = document.getElementById('merge-replace-btn');
+    const mergeCombineBtn = document.getElementById('merge-combine-btn');
+
+    function promptMergeOrReplace(fileName, localCount, fileCount) {
+      return new Promise((resolve) => {
+        mergeModalDesc.innerHTML = `You currently have <strong class="text-zinc-100">${localCount} local notes</strong> in browser cache, and <strong class="text-amber-300">${escapeHtml(fileName)}</strong> contains <strong class="text-zinc-100">${fileCount} notes</strong>. How would you like to sync?`;
+        mergeModal.classList.remove('hidden');
+        mergeModal.classList.add('flex');
+
+        const cleanup = (choice) => {
+          mergeModal.classList.add('hidden');
+          mergeModal.classList.remove('flex');
+          mergeCancelBtn.removeEventListener('click', onCancel);
+          mergeReplaceBtn.removeEventListener('click', onReplace);
+          mergeCombineBtn.removeEventListener('click', onCombine);
+          resolve(choice);
+        };
+
+        const onCancel = () => cleanup('cancel');
+        const onReplace = () => cleanup('replace');
+        const onCombine = () => cleanup('merge');
+
+        mergeCancelBtn.addEventListener('click', onCancel);
+        mergeReplaceBtn.addEventListener('click', onReplace);
+        mergeCombineBtn.addEventListener('click', onCombine);
+      });
+    }
+
+    function readFirstAvailableStorage(currentKey, legacyKeys) {
+      const currentVal = localStorage.getItem(currentKey);
+      if (currentVal !== null) return currentVal;
+      for (const k of legacyKeys) {
+        const legVal = localStorage.getItem(k);
+        if (legVal !== null) return legVal;
+      }
+      return null;
+    }
+
+    async function initStore() {
+      apiKey = readFirstAvailableStorage(STORAGE_API_KEY, LEGACY_API_KEYS) || '';
+      localStorage.setItem(STORAGE_API_KEY, apiKey);
+
+      const saved = readFirstAvailableStorage(STORAGE_REPO_KEY, LEGACY_REPO_KEYS);
+      if (saved) {
+        try {
+          const parsedSaved = JSON.parse(saved);
+          notes = Array.isArray(parsedSaved)
+            ? parsedSaved.map((n, i) => normalizeNoteRecord(n, i))
+            : DEFAULT_PITHY_NOTES.map((n, i) => normalizeNoteRecord(n, i));
+        } catch (e) {
+          notes = DEFAULT_PITHY_NOTES.map((n, i) => normalizeNoteRecord(n, i));
+        }
+      } else {
+        notes = DEFAULT_PITHY_NOTES.map((n, i) => normalizeNoteRecord(n, i));
+      }
+      localStorage.setItem(STORAGE_REPO_KEY, serializeNotesForOutput(notes));
+
+      VectorEngine.invalidate();
+      if (notes.length && !activeFocusId) activeFocusId = notes[0].id;
+      updateHeaderStatus();
+      updateApiKeyUI();
+
+      const rememberedHandle = await loadPersistedFileHandle();
+      if (rememberedHandle) {
+        try {
+          const perm = await rememberedHandle.queryPermission({ mode: 'readwrite' });
+          if (perm === 'granted') {
+            await activateFileHandle(rememberedHandle, false, true);
+          } else {
+            pendingFileHandle = rememberedHandle;
+            updateHeaderStatus();
+          }
+        } catch (e) {
+          console.warn('Stored handle check failed:', e);
+        }
+      }
+    }
+
+    async function activateFileHandle(handle, notify = true, silentInit = false) {
+      try {
+        const file = await handle.getFile();
+        const text = await file.text();
+        let shouldWriteBack = false;
+        let strippedExtraneous = 0;
+
+        if (text.trim()) {
+          const parsed = JSON.parse(text);
+          if (Array.isArray(parsed)) {
+            const inspected = inspectImportedArray(parsed);
+            strippedExtraneous = inspected.strippedCount;
+            const incoming = inspected.records;
+
+            if (!silentInit && !isSeedOnlyRepo(notes) && incoming.length > 0) {
+              const choice = await promptMergeOrReplace(handle.name, notes.length, incoming.length);
+              if (choice === 'cancel') return false;
+              if (choice === 'merge') {
+                notes = mergeNoteArrays(notes, incoming);
+                shouldWriteBack = true;
+              } else {
+                notes = incoming;
+                shouldWriteBack = strippedExtraneous > 0;
+              }
+            } else {
+              notes = incoming;
+              shouldWriteBack = strippedExtraneous > 0;
+            }
+            VectorEngine.invalidate();
+            activeFocusId = notes.length ? notes[0].id : null;
+            localStorage.setItem(STORAGE_REPO_KEY, serializeNotesForOutput(notes));
+          }
+        }
+        activeFileHandle = handle;
+        pendingFileHandle = null;
+        await persistFileHandle(handle);
+        if (shouldWriteBack) {
+          await writeToLinkedFile(false);
+        }
+        updateHeaderStatus();
+        computeOrbitRelationships();
+        if (currentView === 'feed') renderFeed();
+        if (notify) {
+          showToast(strippedExtraneous > 0
+            ? `Synced ${handle.name} (removed extraneous fields from ${strippedExtraneous} note${strippedExtraneous === 1 ? '' : 's'})`
+            : `Synced with ${handle.name}`);
+        }
+        return true;
+      } catch (err) {
+        console.error('Failed to activate file handle:', err);
+        const reason = err.name === 'NotFoundError'
+          ? "File moved or missing; select file to re-link"
+          : (window.location.protocol === 'file:'
+            ? "Local file:// permission blocked; select file to re-link"
+            : `Read blocked (${err.name}); select file to re-link`);
+        showToast(reason);
+        return false;
+      }
+    }
+
+    async function writeToLinkedFile(showFeedback = false) {
+      if (!activeFileHandle || isWritingToFile) return false;
+      isWritingToFile = true;
+      try {
+        const writable = await activeFileHandle.createWritable();
+        await writable.write(serializeNotesForOutput(notes));
+        await writable.close();
+        updateHeaderStatus('synced');
+        if (showFeedback) showToast(`Saved to ${activeFileHandle.name}`);
+        return true;
+      } catch (err) {
+        console.error('File rewrite failed:', err);
+        pendingFileHandle = activeFileHandle;
+        activeFileHandle = null;
+        updateHeaderStatus('error');
+        showToast("File permission paused; click Reconnect");
+        return false;
+      } finally {
+        isWritingToFile = false;
+      }
+    }
+
+    async function saveStore(showFileToast = false) {
+      notes = notes.map((n, i) => normalizeNoteRecord(n, i));
+      VectorEngine.invalidate();
+      localStorage.setItem(STORAGE_REPO_KEY, serializeNotesForOutput(notes));
+      updateHeaderStatus();
+      if (activeFileHandle) {
+        await writeToLinkedFile(showFileToast);
+      }
+    }
+
+    function updateHeaderStatus(syncState = null) {
+      const countEl = document.getElementById('repo-count');
+      const dotEl = document.getElementById('sync-dot');
+      const fileLabelEl = document.getElementById('file-sync-label');
+      const reconnectBtn = document.getElementById('reconnect-file-btn');
+      const reconnectName = document.getElementById('reconnect-file-name');
+
+      if (countEl) {
+        countEl.innerText = `${notes.length} note${notes.length === 1 ? '' : 's'}`;
+      }
+
+      if (activeFileHandle) {
+        dotEl.className = 'w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse flex-shrink-0';
+        fileLabelEl.innerHTML = `• <span class="text-emerald-400 font-semibold">${escapeHtml(activeFileHandle.name)}</span>`;
+        reconnectBtn.classList.add('hidden');
+        reconnectBtn.classList.remove('flex');
+      } else if (pendingFileHandle) {
+        dotEl.className = 'w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0';
+        fileLabelEl.innerHTML = `• <span class="text-amber-300/90">${escapeHtml(pendingFileHandle.name)} (paused)</span>`;
+        reconnectName.innerText = `Reconnect ${pendingFileHandle.name}`;
+        reconnectBtn.classList.remove('hidden');
+        reconnectBtn.classList.add('flex');
+      } else {
+        dotEl.className = syncState === 'error'
+          ? 'w-1.5 h-1.5 rounded-full bg-red-400 flex-shrink-0'
+          : 'w-1.5 h-1.5 rounded-full bg-zinc-500 flex-shrink-0';
+        fileLabelEl.innerText = '• Browser cache';
+        reconnectBtn.classList.add('hidden');
+        reconnectBtn.classList.remove('flex');
+      }
+    }
+
+    function updateApiKeyUI() {
+      const statusEl = document.getElementById('ai-status');
+      if (apiKey) {
+        statusEl.innerHTML = `<span class="text-amber-400 font-semibold flex items-center gap-1"><i class="ph-bold ph-lightning"></i> Gemini AI Distill, PDF &amp; URL Active</span>`;
+      } else {
+        statusEl.innerText = "Mode: Local NLP (Add API Key for AI Distill, PDF & URL)";
+      }
+    }
+
+    // --- 5. EGO-CENTRIC RELATIONSHIP ORBIT ENGINE ---
+    const orbitCanvas = document.getElementById('orbit-canvas');
+    const orbitCtx = orbitCanvas.getContext('2d');
+    const orbitDomLayer = document.getElementById('orbit-dom-layer');
+    let orbitWidth = window.innerWidth;
+    let orbitHeight = window.innerHeight;
+    let orbitNodes = [];
+
+    function getOrbitCenterY() {
+      return orbitHeight / 2 - 14;
+    }
+
+    function resizeOrbitCanvas() {
+      const dpr = window.devicePixelRatio || 1;
+      const parent = orbitCanvas.parentElement;
+      if (!parent || parent.clientWidth === 0 || parent.clientHeight === 0) return;
+      orbitWidth = parent.clientWidth;
+      orbitHeight = parent.clientHeight;
+      orbitCanvas.width = orbitWidth * dpr;
+      orbitCanvas.height = orbitHeight * dpr;
+      orbitCanvas.style.width = orbitWidth + 'px';
+      orbitCanvas.style.height = orbitHeight + 'px';
+      orbitCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      if (orbitNodes.length) computeOrbitRelationships();
+    }
+
+    function computeOrbitRelationships() {
+      if (!notes.length) {
+        orbitNodes = [];
+        renderOrbitDOM();
+        return;
+      }
+
+      const activeNote = notes.find(n => n.id === activeFocusId) || notes[0];
+      activeFocusId = activeNote.id;
+
+      const vectors = VectorEngine.calculateVectors(notes);
+      const activeIdx = notes.findIndex(n => n.id === activeFocusId);
+      const activeVec = vectors[activeIdx];
+
+      const scored = notes
+        .map((n, idx) => {
+          if (idx === activeIdx) return { note: n, similarity: 0.99 };
+          return {
+            note: n,
+            similarity: VectorEngine.scoreRelationship(activeNote, activeVec, n, vectors[idx])
+          };
+        })
+        .filter(item => item.note.id !== activeFocusId)
+        .sort((a, b) => b.similarity - a.similarity);
+
+      const top6 = scored.slice(0, 6);
+
+      const oldMap = new Map(orbitNodes.map(n => [n.id, n]));
+      const newNodes = [];
+
+      const centerX = orbitWidth / 2;
+      const centerY = getOrbitCenterY();
+
+      const prevCenter = oldMap.get(activeFocusId);
+      newNodes.push({
+        id: activeFocusId,
+        note: activeNote,
+        isCenter: true,
+        x: prevCenter ? prevCenter.x : centerX,
+        y: prevCenter ? prevCenter.y : centerY,
+        similarity: 0.99
+      });
+
+      const radiusX = Math.max(250, Math.min(orbitWidth * 0.37, 420));
+      const radiusY = Math.max(155, Math.min(orbitHeight * 0.33, 250));
+      const stepAngle = (Math.PI * 2) / Math.max(top6.length, 1);
+
+      top6.forEach((item, i) => {
+        const angle = i * stepAngle - Math.PI / 2;
+        const prevSat = oldMap.get(item.note.id);
+        const targetX = centerX + Math.cos(angle) * radiusX;
+        const targetY = centerY + Math.sin(angle) * radiusY;
+
+        newNodes.push({
+          id: item.note.id,
+          note: item.note,
+          isCenter: false,
+          x: prevSat ? prevSat.x : targetX,
+          y: prevSat ? prevSat.y : targetY,
+          targetX,
+          targetY,
+          similarity: item.similarity
+        });
+      });
+
+      orbitNodes = newNodes;
+      renderOrbitDOM();
+    }
+
+    function renderOrbitDOM() {
+      hideThoughtsTooltipImmediately();
+      orbitDomLayer.innerHTML = '';
+
+      orbitNodes.forEach(node => {
+        const el = document.createElement('div');
+        el.id = `orbit-node-${node.id}`;
+        el.className = 'absolute top-0 left-0 will-change-transform pointer-events-auto';
+        const hasThoughts = Boolean(node.note.thoughts && node.note.thoughts.trim());
+
+        if (node.isCenter) {
+          const n = node.note;
+          el.innerHTML = `
+            <div class="card-glow w-[28rem] p-4 rounded-2xl bg-brand-card/95 border border-amber-500/50 backdrop-blur-md cursor-pointer active:scale-[0.99] transition-transform" title="Click & hold to edit">
+              <div class="flex items-center justify-between pb-1.5 mb-1.5 border-b border-brand-cardBorder">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1">
+                  <i class="ph-bold ph-target"></i> Primary Pithy Note
+                </span>
+                <div class="flex items-center gap-1.5">
+                  ${hasThoughts ? `<button type="button" class="thoughts-trigger w-5 h-5 rounded-full bg-amber-500/15 hover:bg-amber-500/30 border border-amber-500/50 text-amber-300 font-mono font-bold text-[10px] inline-flex items-center justify-center transition-colors" aria-label="View My Thoughts">?</button>` : ''}
+                  <span class="text-[10px] text-zinc-500 font-mono">${formatDate(n.created)}</span>
+                </div>
+              </div>
+              <h2 class="text-sm font-bold text-zinc-100 leading-snug mb-1.5">${escapeHtml(n.title)}</h2>
+              <div class="text-xs text-zinc-200 leading-relaxed space-y-1 font-serif select-text">
+                ${formatNumberedSentencesHtml(n.pithy)}
+              </div>
+              ${n.reference ? `
+                <div class="mt-2 pt-1.5 border-t border-brand-cardBorder/60 flex items-center gap-1 text-[10px] text-zinc-400">
+                  <i class="ph ph-books text-amber-400 flex-shrink-0"></i>
+                  <span class="truncate font-sans italic">${formatReferenceHtml(n.reference)}</span>
+                </div>
+              ` : ''}
+              <div class="flex items-center justify-between mt-1.5 pt-1">
+                <div class="flex flex-wrap gap-1">
+                  ${(n.tags || []).map(t => `<button type="button" data-tag="${escapeHtml(t)}" class="orbit-tag-btn px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-amber-500/20 border border-zinc-700/60 hover:border-amber-500/50 text-[9px] text-zinc-400 hover:text-amber-300 transition-colors">#${escapeHtml(t)}</button>`).join('')}
+                </div>
+                <div class="flex items-center gap-1">
+                  <button type="button" class="copy-text-btn p-1 text-zinc-500 hover:text-amber-400 transition-colors" title="Copy formatted text (title, numbered text, reference, #tags)">
+                    <i class="ph ph-copy text-sm"></i>
+                  </button>
+                  <button type="button" class="edit-btn p-1 text-zinc-500 hover:text-amber-400 transition-colors" title="Edit Note & My Thoughts">
+                    <i class="ph ph-note-pencil text-sm"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+          bindThoughtsTrigger(el.querySelector('.thoughts-trigger'), n);
+          el.querySelectorAll('.orbit-tag-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              openGlobalSearch(`#${btn.dataset.tag}`);
+            });
+          });
+          el.querySelector('.copy-text-btn').addEventListener('click', async (e) => {
+            e.stopPropagation();
+            await copyNoteTextToClipboard(n);
+          });
+          el.querySelector('.edit-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            openEditModal(node.note.id);
+          });
+          attachLongPress(el, () => openEditModal(node.note.id));
+        } else {
+          const matchPercent = Math.min(99, Math.max(0, Math.round(node.similarity * 100)));
+          el.innerHTML = `
+            <div class="w-64 p-2.5 rounded-xl bg-brand-card/90 border border-zinc-700/70 hover:border-amber-400/80 backdrop-blur-md cursor-pointer active:scale-95 transition-colors shadow-lg" title="Click to center • Click & hold to edit">
+              <div class="flex items-center justify-between gap-1 mb-0.5 pb-0.5 border-b border-zinc-800">
+                <span class="text-[10px] font-bold text-amber-400 flex items-center gap-1 font-mono" title="Relationship weighting (0–99%): tags primary + title/pithy differentiation">
+                  <i class="ph-bold ph-waves"></i> ${matchPercent}%
+                </span>
+                <div class="flex items-center gap-1 min-w-0">
+                  <span class="text-[9px] text-zinc-500 font-mono truncate max-w-[115px]">${escapeHtml(node.note.reference || '')}</span>
+                  ${hasThoughts ? `<button type="button" class="thoughts-trigger flex-shrink-0 w-4 h-4 rounded-full bg-amber-500/15 hover:bg-amber-500/30 border border-amber-500/50 text-amber-300 font-mono font-bold text-[9px] inline-flex items-center justify-center transition-colors" aria-label="View My Thoughts">?</button>` : ''}
+                </div>
+              </div>
+              <h4 class="text-xs font-semibold text-zinc-200 line-clamp-1 mb-0.5">${escapeHtml(node.note.title)}</h4>
+              <p class="text-[11px] text-zinc-400 line-clamp-4 leading-snug font-serif">${escapeHtml(node.note.pithy)}</p>
+            </div>
+          `;
+          bindThoughtsTrigger(el.querySelector('.thoughts-trigger'), node.note);
+          attachLongPress(el, () => openEditModal(node.note.id));
+          el.addEventListener('click', (e) => {
+            if (e.target.closest('.thoughts-trigger')) return;
+            activeFocusId = node.note.id;
+            computeOrbitRelationships();
+            showToast(`Centered: ${node.note.title}`);
+          });
+        }
+
+        orbitDomLayer.appendChild(el);
+      });
+    }
+
+    function animateOrbit() {
+      if (currentView === 'orbit') {
+        orbitCtx.clearRect(0, 0, orbitWidth, orbitHeight);
+
+        const center = orbitNodes.find(n => n.isCenter);
+        const cx = orbitWidth / 2;
+        const cy = getOrbitCenterY();
+
+        if (center) {
+          center.x += (cx - center.x) * 0.14;
+          center.y += (cy - center.y) * 0.14;
+        }
+
+        orbitNodes.forEach(node => {
+          if (!node.isCenter && center) {
+            node.x += (node.targetX - node.x) * 0.14;
+            node.y += (node.targetY - node.y) * 0.14;
+
+            orbitCtx.beginPath();
+            orbitCtx.moveTo(center.x, center.y);
+            orbitCtx.lineTo(node.x, node.y);
+            const alpha = Math.max(0.15, node.similarity * 0.55);
+            orbitCtx.strokeStyle = `rgba(245, 158, 11, ${alpha})`;
+            orbitCtx.lineWidth = 1.25;
+            orbitCtx.setLineDash([4, 4]);
+            orbitCtx.stroke();
+            orbitCtx.setLineDash([]);
+
+            orbitCtx.fillStyle = '#f59e0b';
+            orbitCtx.beginPath();
+            orbitCtx.arc(node.x, node.y, 3, 0, Math.PI * 2);
+            orbitCtx.fill();
+          }
+
+          const domEl = document.getElementById(`orbit-node-${node.id}`);
+          if (domEl) {
+            const w = domEl.offsetWidth || (node.isCenter ? 448 : 256);
+            const h = domEl.offsetHeight || (node.isCenter ? 195 : 112);
+            domEl.style.transform = `translate3d(${(node.x - w / 2).toFixed(1)}px, ${(node.y - h / 2).toFixed(1)}px, 0)`;
+          }
+        });
+      }
+      requestAnimationFrame(animateOrbit);
+    }
+
+    // --- 6. VIEW SWITCHING & RESIZE OBSERVER ---
+    const orbitContainer = document.getElementById('orbit-container');
+    const feedContainer = document.getElementById('feed-container');
+    const viewTabs = document.querySelectorAll('.view-tab');
+
+    function switchView(targetView) {
+      hideThoughtsTooltipImmediately();
+      currentView = targetView;
+
+      viewTabs.forEach(tab => {
+        const isMatch = tab.dataset.view === targetView;
+        tab.className = isMatch
+          ? 'view-tab px-3 py-1 rounded-md flex items-center gap-1.5 transition-all bg-amber-500 text-black font-bold'
+          : 'view-tab px-3 py-1 rounded-md flex items-center gap-1.5 transition-all text-zinc-400 hover:text-zinc-200';
+      });
+
+      orbitContainer.classList.toggle('hidden', targetView !== 'orbit');
+      feedContainer.classList.toggle('hidden', targetView !== 'feed');
+
+      if (targetView === 'orbit') {
+        resizeOrbitCanvas();
+        computeOrbitRelationships();
+      } else if (targetView === 'feed') {
+        renderFeed();
+      }
+    }
+
+    viewTabs.forEach(tab => {
+      tab.addEventListener('click', () => switchView(tab.dataset.view));
+    });
+
+    const workspaceMain = document.getElementById('workspace-main');
+    if (window.ResizeObserver) {
+      new ResizeObserver(() => {
+        resizeOrbitCanvas();
+      }).observe(workspaceMain);
+    } else {
+      window.addEventListener('resize', () => {
+        resizeOrbitCanvas();
+      });
+    }
+
+    // --- 7. PITHY DISTILLATION ENGINE (MULTIMODAL PDF, URL GROUNDING & DRAG-AND-DROP) ---
+    const intakeInput = document.getElementById('intake-input');
+    const distillBtn = document.getElementById('distill-btn');
+    const distillBtnText = document.getElementById('distill-btn-text');
+    const urlDetectedBadge = document.getElementById('url-detected-badge');
+    const intakeDropzone = document.getElementById('intake-dropzone');
+    const intakeDropOverlay = document.getElementById('intake-drop-overlay');
+    const intakeBrowseFileBtn = document.getElementById('intake-browse-file-btn');
+    const intakeFileInput = document.getElementById('intake-file-input');
+    const attachedPdfBar = document.getElementById('attached-pdf-bar');
+    const attachedPdfName = document.getElementById('attached-pdf-name');
+    const attachedPdfSize = document.getElementById('attached-pdf-size');
+    const attachedPdfClear = document.getElementById('attached-pdf-clear');
+
+    function setPdfAttachment(pdfObj) {
+      pendingPdfAttachment = pdfObj;
+      if (pdfObj) {
+        attachedPdfName.innerText = pdfObj.name;
+        attachedPdfSize.innerText = `${Math.max(1, Math.round(pdfObj.sizeBytes / 1024))} KB`;
+        attachedPdfBar.classList.remove('hidden');
+        attachedPdfBar.classList.add('flex');
+      } else {
+        attachedPdfBar.classList.add('hidden');
+        attachedPdfBar.classList.remove('flex');
+      }
+    }
+
+    attachedPdfClear.addEventListener('click', () => setPdfAttachment(null));
+
+    function extractUrls(text) {
+      const matches = (text || '').match(/https?:\/\/[^\s<>"')]+/gi) || [];
+      return [...new Set(matches)];
+    }
+
+    function updateUrlBadge() {
+      const urls = extractUrls(intakeInput.value);
+      urlDetectedBadge.classList.toggle('hidden', urls.length === 0);
+      urlDetectedBadge.classList.toggle('flex', urls.length > 0);
+    }
+
+    intakeInput.addEventListener('input', updateUrlBadge);
+
+    function parseJsonObjectFromResponse(rawText) {
+      const cleaned = (rawText || '')
+        .trim()
+        .replace(/^```(?:json)?\s*/i, '')
+        .replace(/\s*```$/i, '')
+        .trim();
+      try {
+        return JSON.parse(cleaned);
+      } catch (e) {
+        const match = cleaned.match(/\{[\s\S]*\}/);
+        if (match) return JSON.parse(match[0]);
+        throw e;
+      }
+    }
+
+    function arrayBufferToBase64(buffer) {
+      const bytes = new Uint8Array(buffer);
+      const chunkSize = 0x8000;
+      let binary = '';
+      for (let i = 0; i < bytes.length; i += chunkSize) {
+        binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
+      }
+      return btoa(binary);
+    }
+
+    async function handleDistill() {
+      const text = intakeInput.value.trim();
+      const hasPdf = Boolean(pendingPdfAttachment);
+
+      if (!text && !hasPdf) {
+        showToast("Paste text, drop a URL, or drag a file first");
+        return;
+      }
+
+      const urls = extractUrls(text);
+
+      if (urls.length > 0 && !apiKey) {
+        showToast("Add a Gemini API Key to fetch & distill URLs");
+        return;
+      }
+
+      distillBtn.disabled = true;
+      distillBtnText.innerText = hasPdf
+        ? "Reading PDF..."
+        : (urls.length > 0 ? "Fetching URL..." : "Distilling...");
+
+      try {
+        if (apiKey) {
+          const payload = await callGeminiPithy(text, urls, pendingPdfAttachment);
+          openReviewModal(payload);
+        } else if (hasPdf) {
+          const extracted = extractTextFromPdfBuffer(pendingPdfAttachment.arrayBuffer);
+          if (!extracted || extracted.length < 40) {
+            showToast("Compressed/scanned PDF — add Gemini API Key to read natively");
+          } else {
+            const fallbackPayload = generateLocalPithy(extracted, pendingPdfAttachment.name);
+            openReviewModal(fallbackPayload);
+          }
+        } else {
+          const fallbackPayload = generateLocalPithy(text);
+          openReviewModal(fallbackPayload);
+        }
+      } catch (err) {
+        console.error(err);
+        if (hasPdf) {
+          showToast(`PDF read failed: ${err.message || 'Check file size/key'}`);
+        } else if (urls.length > 0) {
+          showToast(`URL fetch failed: ${err.message || 'Check link accessibility'}`);
+        } else {
+          showToast("AI call failed; using local distiller");
+          const fallbackPayload = generateLocalPithy(text);
+          openReviewModal(fallbackPayload);
+        }
+      } finally {
+        distillBtn.disabled = false;
+        distillBtnText.innerText = "Distill";
+      }
+    }
+
+    async function callGeminiPithy(rawText, urls = [], pdfAttachment = null) {
+      const existingTags = [...new Set(notes.flatMap(n => n.tags || []))].join(', ');
+      const hasUrls = urls.length > 0;
+      const hasPdf = Boolean(pdfAttachment);
+
+      const sourceInstruction = hasPdf
+        ? `Read the attached PDF document ("${pdfAttachment.name}")${rawText ? ' along with the accompanying user notes' : ''} and extract its core essence.`
+        : (hasUrls
+          ? 'Fetch and read the full content of the URL(s) provided in the input text using your URL context and search tools, then extract its core essence.'
+          : 'Analyze the input text and extract its core essence.');
+
+      const prompt = `You are the strict Pithy Distiller.
+${sourceInstruction}
+Distill into an ultra-dense, strict 3-sentence note (~50-60 words).
+Structure strictly as:
+Sentence 1: Thesis / Core premise.
+Sentence 2: Fulcrum / dynamic causal mechanism.
+Sentence 3: Consequence / strategic reality.
+
+Assign 1 to 3 lowercase conceptual tags. Reuse existing tags when conceptually accurate: [${existingTags}].
+
+Return ONLY a valid raw JSON object (no markdown fences, no commentary) with these keys:
+{
+  "title": "Concise 3-7 word conceptual title",
+  "pithy": "Sentence 1. Sentence 2. Sentence 3.",
+  "reference": "${hasPdf ? `Author / Document Title (${pdfAttachment.name})` : (hasUrls ? 'Author / Publication Title + URL' : 'Source or author if detected, else empty string')}",
+  "tags": ["tag1", "tag2", "tag3"]
+}`;
+
+      const parts = [{ text: prompt }];
+      if (hasPdf) {
+        parts.push({
+          inlineData: {
+            mimeType: "application/pdf",
+            data: pdfAttachment.base64
+          }
+        });
+      }
+      if (rawText) {
+        parts.push({ text: `INPUT:\n${rawText}` });
+      }
+
+      const requestBody = {
+        contents: [{ parts }]
+      };
+
+      if (hasUrls && !hasPdf) {
+        requestBody.tools = [
+          { urlContext: {} },
+          { googleSearch: {} }
+        ];
+      } else {
+        requestBody.generationConfig = { responseMimeType: "application/json" };
+      }
+
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestBody)
+      });
+
+      const data = await response.json();
+      if (!response.ok || data.error) {
+        throw new Error(data.error?.message || `HTTP ${response.status}`);
+      }
+
+      const candidate = data.candidates?.[0];
+      const respParts = candidate?.content?.parts || [];
+      const content = respParts.map(p => p.text || '').join('\n').trim();
+      const parsed = parseJsonObjectFromResponse(content);
+
+      if (hasUrls && (!parsed.reference || !parsed.reference.includes('http'))) {
+        parsed.reference = parsed.reference
+          ? `${parsed.reference} (${urls[0]})`
+          : urls[0];
+      } else if (hasPdf && !parsed.reference) {
+        parsed.reference = pdfAttachment.name;
+      }
+
+      return normalizeNoteRecord(parsed);
+    }
+
+    function generateLocalPithy(rawText, defaultRef = "") {
+      const clean = rawText.replace(/\s+/g, ' ').trim();
+      const rawSentences = splitSentences(clean);
+
+      let s1 = rawSentences[0] || clean;
+      let s2 = rawSentences[1] || "The underlying dynamic functions through interrelated feedback and structural delays.";
+      let s3 = rawSentences[2] || "Sustained leverage requires aligning tactical intervention with foundational causal realities.";
+
+      const titleWords = VectorEngine.tokenize(clean).slice(0, 4);
+      const title = titleWords.length
+        ? titleWords.map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+        : "Distilled Perspective";
+
+      const tags = VectorEngine.tokenize(clean).slice(0, 3);
+
+      return {
+        title: title,
+        pithy: `${s1.trim()} ${s2.trim()} ${s3.trim()}`,
+        reference: defaultRef,
+        tags: tags.length ? tags : ["insight", "dynamics"],
+        thoughts: ""
+      };
+    }
+
+    distillBtn.addEventListener('click', handleDistill);
+
+    // --- DRAG-AND-DROP & FILE INTAKE HANDLER ---
+    function extractTextFromHtml(htmlString) {
+      const doc = new DOMParser().parseFromString(htmlString, 'text/html');
+      doc.querySelectorAll('script, style, nav, footer, header, noscript').forEach(el => el.remove());
+      return (doc.body?.innerText || doc.body?.textContent || '').replace(/\s+/g, ' ').trim();
+    }
+
+    function extractTextFromPdfBuffer(arrayBuffer) {
+      const decoder = new TextDecoder('latin1');
+      const raw = decoder.decode(new Uint8Array(arrayBuffer));
+      const chunks = [];
+      const tjMatches = raw.match(/\(([^()\\]*(?:\\.[^()\\]*)*)\)\s*Tj/g) || [];
+      tjMatches.forEach(m => {
+        const inner = m.replace(/^\(/, '').replace(/\)\s*Tj$/, '');
+        chunks.push(inner.replace(/\\([()\\])/g, '$1'));
+      });
+      const tjArrayMatches = raw.match(/\[(.*?)\]\s*TJ/g) || [];
+      tjArrayMatches.forEach(arr => {
+        const innerStrings = arr.match(/\(([^()\\]*(?:\\.[^()\\]*)*)\)/g) || [];
+        innerStrings.forEach(s => chunks.push(s.slice(1, -1).replace(/\\([()\\])/g, '$1')));
+      });
+      return chunks.join(' ').replace(/\s+/g, ' ').trim();
+    }
+
+    async function handleDroppedOrSelectedFile(file) {
+      if (!file) return;
+      const nameLower = file.name.toLowerCase();
+
+      try {
+        if (nameLower.endsWith('.json') || file.type === 'application/json') {
+          const raw = await file.text();
+          const parsed = JSON.parse(raw.trim());
+
+          if (Array.isArray(parsed) && parsed.length > 0 && (parsed[0].pithy || parsed[0].synthesis || parsed[0].title)) {
+            const { records: incoming, strippedCount } = inspectImportedArray(parsed);
+            if (!isSeedOnlyRepo(notes)) {
+              const choice = await promptMergeOrReplace(file.name, notes.length, incoming.length);
+              if (choice === 'cancel') return;
+              notes = choice === 'merge' ? mergeNoteArrays(notes, incoming) : incoming;
+            } else {
+              notes = incoming;
+            }
+            activeFocusId = notes[0].id;
+            await saveStore(false);
+            computeOrbitRelationships();
+            if (currentView === 'feed') renderFeed();
+            showToast(strippedCount > 0
+              ? `Loaded ${notes.length} cards from ${file.name} (removed extraneous fields)`
+              : `Loaded ${notes.length} cards from ${file.name}`);
+            return;
+          }
+
+          const rawItem = Array.isArray(parsed) ? parsed[0] : parsed;
+          if (rawItem && typeof rawItem === 'object' && (rawItem.pithy || rawItem.synthesis || rawItem.summary || rawItem.title)) {
+            const { record: cleanItem, hadExtraneous } = sanitizeNoteObject({
+              title: rawItem.title || rawItem.heading || '',
+              pithy: rawItem.pithy || rawItem.synthesis || rawItem.summary || rawItem.text || '',
+              reference: rawItem.reference || rawItem.source || rawItem.url || file.name,
+              tags: rawItem.tags || rawItem.keywords || [],
+              thoughts: rawItem.thoughts || rawItem.notes || rawItem.commentary || ''
+            });
+            openReviewModal(cleanItem, false);
+            showToast(hadExtraneous
+              ? `Loaded clean Pithy JSON from ${file.name} (stripped extraneous fields)`
+              : `Loaded Pithy JSON from ${file.name}`);
+            return;
+          }
+
+          intakeInput.value = raw;
+          updateUrlBadge();
+          showToast(`Loaded ${file.name} into intake`);
+          return;
+        }
+
+        if (nameLower.endsWith('.pdf') || file.type === 'application/pdf') {
+          if (file.size > 18 * 1024 * 1024) {
+            showToast("PDF exceeds 18 MB browser inline limit");
+            return;
+          }
+          const buf = await file.arrayBuffer();
+          const base64 = arrayBufferToBase64(buf);
+          setPdfAttachment({
+            name: file.name,
+            sizeBytes: file.size,
+            base64,
+            arrayBuffer: buf
+          });
+
+          if (apiKey) {
+            showToast(`Reading ${file.name} with Gemini...`);
+            await handleDistill();
+          } else {
+            showToast(`Attached ${file.name} — click Distill (or add API Key for full PDF reading)`);
+          }
+          return;
+        }
+
+        setPdfAttachment(null);
+        const rawText = await file.text();
+        const extractedText = (nameLower.endsWith('.html') || nameLower.endsWith('.htm'))
+          ? extractTextFromHtml(rawText)
+          : rawText.trim();
+
+        if (!extractedText) {
+          showToast(`No readable text found in ${file.name}`);
+          return;
+        }
+
+        intakeInput.value = extractedText;
+        updateUrlBadge();
+
+        if (extractedText.length <= 25000) {
+          showToast(`Distilling ${file.name}...`);
+          await handleDistill();
+        } else {
+          showToast(`Loaded ${file.name} (${Math.round(extractedText.length / 1000)}k chars) — click Distill`);
+        }
+      } catch (err) {
+        console.error('File drop error:', err);
+        showToast(`Could not read ${file.name}`);
+      }
+    }
+
+    let dragEnterDepth = 0;
+
+    intakeDropzone.addEventListener('dragenter', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dragEnterDepth++;
+      intakeDropOverlay.classList.remove('hidden');
+      intakeDropOverlay.classList.add('flex');
+    });
+
+    intakeDropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+    });
+
+    intakeDropzone.addEventListener('dragleave', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dragEnterDepth = Math.max(0, dragEnterDepth - 1);
+      if (dragEnterDepth === 0) {
+        intakeDropOverlay.classList.add('hidden');
+        intakeDropOverlay.classList.remove('flex');
+      }
+    });
+
+    intakeDropzone.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dragEnterDepth = 0;
+      intakeDropOverlay.classList.add('hidden');
+      intakeDropOverlay.classList.remove('flex');
+
+      const files = e.dataTransfer?.files;
+      if (files && files.length > 0) {
+        await handleDroppedOrSelectedFile(files[0]);
+      } else {
+        const droppedText = e.dataTransfer?.getData('text/plain');
+        if (droppedText) {
+          intakeInput.value = droppedText;
+          updateUrlBadge();
+        }
+      }
+    });
+
+    window.addEventListener('dragover', (e) => e.preventDefault());
+    window.addEventListener('drop', (e) => {
+      if (!intakeDropzone.contains(e.target)) {
+        e.preventDefault();
+      }
+    });
+
+    intakeBrowseFileBtn.addEventListener('click', () => {
+      intakeFileInput.value = '';
+      intakeFileInput.click();
+    });
+
+    intakeFileInput.addEventListener('change', async (e) => {
+      const file = e.target.files?.[0];
+      if (file) await handleDroppedOrSelectedFile(file);
+    });
+
+    // --- 8. UNIVERSAL HYBRID SEARCH & FEED FILTERING ---
+    const searchOpenBtn = document.getElementById('search-open-btn');
+    const searchModal = document.getElementById('search-modal');
+    const globalSearchInput = document.getElementById('global-search-input');
+    const globalSearchClear = document.getElementById('global-search-clear');
+    const globalSearchTags = document.getElementById('global-search-tags');
+    const globalSearchResults = document.getElementById('global-search-results');
+
+    const feedSearchInput = document.getElementById('feed-search-input');
+    const feedSearchClear = document.getElementById('feed-search-clear');
+    const feedTagChips = document.getElementById('feed-tag-chips');
+
+    function rankNotesByQuery(rawQuery) {
+      const q = (rawQuery || '').trim().toLowerCase();
+      if (!q) {
+        return notes.map(n => ({ note: n, score: 1, matchType: 'recent' }));
+      }
+
+      const isTagOnly = q.startsWith('#') && !q.includes(' ');
+      const cleanTag = q.replace(/^#/, '');
+      const qVec = VectorEngine.vectorizeQuery(q, notes);
+      const docVecs = qVec ? VectorEngine.calculateVectors(notes) : [];
+
+      return notes
+        .map((n, idx) => {
+          const titleL = (n.title || '').toLowerCase();
+          const pithyL = (n.pithy || '').toLowerCase();
+          const thoughtsL = (n.thoughts || '').toLowerCase();
+          const refL = (n.reference || '').toLowerCase();
+          const tags = n.tags || [];
+
+          if (isTagOnly) {
+            const exactTag = tags.includes(cleanTag);
+            const partialTag = tags.some(t => t.includes(cleanTag));
+            if (!exactTag && !partialTag) return null;
+            return { note: n, score: exactTag ? 2 : 1.5, matchType: 'tag' };
+          }
+
+          let score = 0;
+          let matchType = 'lexical';
+
+          if (tags.some(t => t === cleanTag || t.includes(q))) { score += 1.4; matchType = 'tag'; }
+          if (titleL.includes(q)) { score += 1.3; matchType = 'exact'; }
+          if (refL.includes(q)) { score += 1.0; matchType = 'source'; }
+          if (pithyL.includes(q)) { score += 0.9; matchType = 'exact'; }
+          if (thoughtsL.includes(q)) { score += 0.85; matchType = 'thoughts'; }
+
+          const sem = qVec ? VectorEngine.cosine(qVec, docVecs[idx]) : 0;
+          if (sem > 0.05) {
+            score += sem;
+          }
+
+          if (score <= 0) return null;
+          return { note: n, score, matchType };
+        })
+        .filter(Boolean)
+        .sort((a, b) => b.score - a.score);
+    }
+
+    function openGlobalSearch(prefill = '') {
+      hideThoughtsTooltipImmediately();
+      globalSearchInput.value = prefill;
+      globalSearchClear.classList.toggle('hidden', !prefill);
+      renderGlobalSearchTags();
+      renderGlobalSearchResults(prefill);
+      searchModal.classList.remove('hidden');
+      searchModal.classList.add('flex');
+      setTimeout(() => globalSearchInput.focus(), 20);
+    }
+
+    function closeGlobalSearch() {
+      searchModal.classList.add('hidden');
+      searchModal.classList.remove('flex');
+    }
+
+    function renderGlobalSearchTags() {
+      const allTags = [...new Set(notes.flatMap(n => n.tags || []))].sort();
+      globalSearchTags.innerHTML = allTags.map(t => `
+        <button type="button" data-tag="${escapeHtml(t)}" class="gsearch-tag-chip px-2 py-0.5 rounded-full bg-zinc-800/90 hover:bg-amber-500/20 border border-zinc-700 hover:border-amber-500/50 text-[10px] font-mono text-zinc-300 hover:text-amber-300 transition-colors">
+          #${escapeHtml(t)}
+        </button>
+      `).join('');
+
+      globalSearchTags.querySelectorAll('.gsearch-tag-chip').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const val = `#${btn.dataset.tag}`;
+          globalSearchInput.value = val;
+          globalSearchClear.classList.remove('hidden');
+          renderGlobalSearchResults(val);
+          globalSearchInput.focus();
+        });
+      });
+    }
+
+    function renderGlobalSearchResults(query) {
+      const ranked = rankNotesByQuery(query);
+      if (!ranked.length) {
+        globalSearchResults.innerHTML = `<div class="py-10 text-center text-xs text-zinc-500">No matching cards found for "${escapeHtml(query)}"</div>`;
+        return;
+      }
+
+      globalSearchResults.innerHTML = ranked.map(({ note: n, matchType, score }) => {
+        const hasThoughts = Boolean(n.thoughts && n.thoughts.trim());
+        const badge = query.trim()
+          ? (matchType === 'lexical'
+            ? `<span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">${Math.min(99, Math.round(score * 100))}% match</span>`
+            : `<span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-zinc-800 text-amber-400 border border-zinc-700">${matchType}</span>`)
+          : '';
+        return `
+          <div data-id="${n.id}" class="gsearch-item p-2.5 rounded-xl hover:bg-zinc-800/75 cursor-pointer transition-colors flex flex-col gap-1">
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex items-center gap-1.5 min-w-0">
+                <h4 class="text-xs font-bold text-zinc-100 truncate">${escapeHtml(n.title)}</h4>
+                ${hasThoughts ? `<span class="w-4 h-4 rounded-full bg-amber-500/15 border border-amber-500/50 text-amber-300 font-mono font-bold text-[9px] inline-flex items-center justify-center flex-shrink-0" title="Has personal thoughts">?</span>` : ''}
+              </div>
+              ${badge}
+            </div>
+            <div class="text-[11px] text-zinc-400 font-serif leading-snug space-y-0.5">
+              ${formatNumberedSentencesHtml(n.pithy, { compact: true })}
+            </div>
+            <div class="flex items-center justify-between pt-0.5">
+              <div class="flex flex-wrap gap-1">
+                ${(n.tags || []).map(t => `<span class="text-[9px] font-mono text-zinc-400">#${escapeHtml(t)}</span>`).join(' ')}
+              </div>
+              <span class="text-[9px] text-zinc-500 italic truncate max-w-[180px]">${escapeHtml(n.reference || '')}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      globalSearchResults.querySelectorAll('.gsearch-item').forEach(row => {
+        row.addEventListener('click', () => {
+          const targetId = row.dataset.id;
+          closeGlobalSearch();
+          activeFocusId = targetId;
+          switchView('orbit');
+          const matched = notes.find(item => item.id === targetId);
+          if (matched) showToast(`Focused: ${matched.title}`);
+        });
+      });
+    }
+
+    searchOpenBtn.addEventListener('click', () => openGlobalSearch(''));
+    searchModal.addEventListener('click', (e) => {
+      if (e.target === searchModal) closeGlobalSearch();
+    });
+    globalSearchInput.addEventListener('input', (e) => {
+      const val = e.target.value;
+      globalSearchClear.classList.toggle('hidden', !val);
+      renderGlobalSearchResults(val);
+    });
+    globalSearchClear.addEventListener('click', () => {
+      globalSearchInput.value = '';
+      globalSearchClear.classList.add('hidden');
+      renderGlobalSearchResults('');
+      globalSearchInput.focus();
+    });
+
+    window.addEventListener('keydown', (e) => {
+      const activeTag = document.activeElement ? document.activeElement.tagName : '';
+      const isTyping = activeTag === 'INPUT' || activeTag === 'TEXTAREA';
+
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        openGlobalSearch('');
+      } else if (!isTyping && e.key === '/') {
+        e.preventDefault();
+        openGlobalSearch('');
+      } else if (e.key === 'Escape') {
+        hideThoughtsTooltipImmediately();
+        if (!searchModal.classList.contains('hidden')) closeGlobalSearch();
+        if (!reviewModal.classList.contains('hidden')) closeReviewModal();
+        if (!keyModal.classList.contains('hidden')) closeKeyModal();
+      }
+    });
+
+    feedSearchInput.addEventListener('input', (e) => {
+      feedFilterQuery = e.target.value;
+      feedSearchClear.classList.toggle('hidden', !feedFilterQuery);
+      renderFeed();
+    });
+
+    feedSearchClear.addEventListener('click', () => {
+      feedFilterQuery = '';
+      feedSearchInput.value = '';
+      feedSearchClear.classList.add('hidden');
+      renderFeed();
+    });
+
+    // --- 9. REVIEW, EDIT & PITHY SKILL JSON IMPORT MODAL ---
+    const reviewModal = document.getElementById('review-modal');
+    const reviewModalHeading = document.getElementById('review-modal-heading');
+    const reviewCloseBtn = document.getElementById('review-close-btn');
+    const modalCopyTextBtn = document.getElementById('modal-copy-text-btn');
+    const modalTitle = document.getElementById('modal-title');
+    const modalPithy = document.getElementById('modal-pithy');
+    const modalRef = document.getElementById('modal-ref');
+    const modalTags = document.getElementById('modal-tags');
+    const modalThoughts = document.getElementById('modal-thoughts');
+    const thoughtsWordCountEl = document.getElementById('thoughts-word-count');
+    const modalCommitBtn = document.getElementById('modal-commit-btn');
+    const modalDeleteBtn = document.getElementById('modal-delete-btn');
+    const sentenceCountEl = document.getElementById('sentence-count');
+    const wordCountEl = document.getElementById('word-count');
+    const existingTagsList = document.getElementById('existing-tags-list');
+
+    const modalUploadJsonBtn = document.getElementById('modal-upload-json-btn');
+    const modalPithyJsonInput = document.getElementById('modal-pithy-json-input');
+    const modalTogglePasteJsonBtn = document.getElementById('modal-toggle-paste-json-btn');
+    const modalPasteJsonDrawer = document.getElementById('modal-paste-json-drawer');
+    const modalPasteJsonText = document.getElementById('modal-paste-json-text');
+    const modalApplyPastedJsonBtn = document.getElementById('modal-apply-pasted-json-btn');
+
+    modalCopyTextBtn.addEventListener('click', async () => {
+      await copyNoteTextToClipboard({
+        title: modalTitle.value,
+        pithy: modalPithy.value,
+        reference: modalRef.value,
+        tags: normalizeTags(modalTags.value)
+      });
+    });
+
+    function applyPithyJson(rawInput) {
+      if (!rawInput || !rawInput.trim()) {
+        showToast("JSON input is empty");
+        return false;
+      }
+
+      const cleaned = rawInput
+        .trim()
+        .replace(/^```(?:json)?\s*/i, '')
+        .replace(/\s*```$/i, '')
+        .trim();
+
+      let parsed;
+      try {
+        parsed = JSON.parse(cleaned);
+      } catch (e) {
+        showToast("Invalid JSON format");
+        return false;
+      }
+
+      const rawItem = Array.isArray(parsed) ? parsed[0] : parsed;
+      if (!rawItem || typeof rawItem !== 'object') {
+        showToast("JSON must contain a Pithy card object");
+        return false;
+      }
+
+      const { record: cleanItem, hadExtraneous } = sanitizeNoteObject(rawItem);
+      const pithyText = cleanItem.pithy;
+      const titleText = cleanItem.title;
+
+      if (!pithyText && !titleText) {
+        showToast("No Pithy title or synthesis fields found");
+        return false;
+      }
+
+      if (titleText) modalTitle.value = titleText;
+      if (pithyText) modalPithy.value = pithyText;
+      modalRef.value = cleanItem.reference;
+      modalTags.value = cleanItem.tags.join(', ');
+      modalThoughts.value = cleanItem.thoughts;
+
+      updatePithyStats();
+      updateThoughtsStats();
+      showToast(hadExtraneous
+        ? "Populated card & stripped extraneous JSON fields"
+        : "Populated card from Pithy JSON");
+      return true;
+    }
+
+    modalUploadJsonBtn.addEventListener('click', () => {
+      modalPithyJsonInput.value = '';
+      modalPithyJsonInput.click();
+    });
+
+    modalPithyJsonInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        applyPithyJson(evt.target.result);
+      };
+      reader.readAsText(file);
+    });
+
+    modalTogglePasteJsonBtn.addEventListener('click', () => {
+      const isHidden = modalPasteJsonDrawer.classList.contains('hidden');
+      modalPasteJsonDrawer.classList.toggle('hidden', !isHidden);
+      modalPasteJsonDrawer.classList.toggle('flex', isHidden);
+      if (isHidden) modalPasteJsonText.focus();
+    });
+
+    modalApplyPastedJsonBtn.addEventListener('click', () => {
+      if (applyPithyJson(modalPasteJsonText.value)) {
+        modalPasteJsonText.value = '';
+        modalPasteJsonDrawer.classList.add('hidden');
+        modalPasteJsonDrawer.classList.remove('flex');
+      }
+    });
+
+    function updatePithyStats() {
+      const val = modalPithy.value.trim();
+      const sCount = splitSentences(val).length;
+      const wCount = val ? val.split(/\s+/).length : 0;
+      sentenceCountEl.innerText = `Sentences: ${sCount}`;
+      sentenceCountEl.className = sCount === 3 ? "text-emerald-400 font-bold" : "text-amber-400 font-bold";
+      wordCountEl.innerText = `~${wCount} words`;
+    }
+
+    function updateThoughtsStats() {
+      const val = modalThoughts.value.trim();
+      const wCount = val ? val.split(/\s+/).length : 0;
+      thoughtsWordCountEl.innerText = `${wCount} word${wCount === 1 ? '' : 's'}`;
+    }
+
+    modalPithy.addEventListener('input', updatePithyStats);
+    modalThoughts.addEventListener('input', updateThoughtsStats);
+
+    function renderExistingTagsPicker() {
+      const allTags = [...new Set(notes.flatMap(n => n.tags || []))].sort();
+      existingTagsList.innerHTML = '';
+      allTags.forEach(tag => {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-amber-500/20 border border-zinc-700 hover:border-amber-500/50 text-[10px] text-zinc-300 transition-colors';
+        chip.innerText = `#${tag}`;
+        chip.addEventListener('click', () => {
+          const current = normalizeTags(modalTags.value);
+          if (current.includes(tag)) return;
+          if (current.length >= 3) {
+            showToast("Maximum 3 tags per thought");
+            return;
+          }
+          modalTags.value = [...current, tag].join(', ');
+        });
+        existingTagsList.appendChild(chip);
+      });
+    }
+
+    function openReviewModal(data, isEdit = false) {
+      hideThoughtsTooltipImmediately();
+      const cleanData = normalizeNoteRecord(data || {});
+      editingNoteId = isEdit ? cleanData.id : null;
+      modalTitle.value = cleanData.title || '';
+      modalPithy.value = cleanData.pithy || '';
+      modalRef.value = cleanData.reference || '';
+      modalTags.value = normalizeTags(cleanData.tags).join(', ');
+      modalThoughts.value = typeof cleanData.thoughts === 'string' ? cleanData.thoughts : '';
+      renderExistingTagsPicker();
+
+      modalPasteJsonText.value = '';
+      modalPasteJsonDrawer.classList.add('hidden');
+      modalPasteJsonDrawer.classList.remove('flex');
+
+      if (isEdit) {
+        reviewModalHeading.innerHTML = `<i class="ph-bold ph-note-pencil"></i> Edit Pithy Note`;
+        modalDeleteBtn.classList.remove('hidden');
+        modalCommitBtn.innerHTML = `<span>Save Updates</span><i class="ph-bold ph-check"></i>`;
+      } else {
+        reviewModalHeading.innerHTML = `<i class="ph-bold ph-seal-check"></i> Review / Manual Pithy Note`;
+        modalDeleteBtn.classList.add('hidden');
+        modalCommitBtn.innerHTML = `<span>Affix Note to Repository</span><i class="ph-bold ph-check"></i>`;
+      }
+
+      updatePithyStats();
+      updateThoughtsStats();
+      reviewModal.classList.remove('hidden');
+      reviewModal.classList.add('flex');
+    }
+
+    function closeReviewModal() {
+      reviewModal.classList.add('hidden');
+      reviewModal.classList.remove('flex');
+      editingNoteId = null;
+    }
+
+    reviewCloseBtn.addEventListener('click', closeReviewModal);
+    reviewModal.addEventListener('click', (e) => {
+      if (e.target === reviewModal) closeReviewModal();
+    });
+
+    modalCommitBtn.addEventListener('click', async () => {
+      const title = modalTitle.value.trim() || "Untitled Note";
+      const pithy = modalPithy.value.trim();
+      const reference = modalRef.value.trim();
+      const tags = normalizeTags(modalTags.value);
+      const thoughts = modalThoughts.value.trim();
+
+      if (!pithy) {
+        showToast("Pithy note text cannot be blank");
+        return;
+      }
+
+      if (editingNoteId) {
+        const idx = notes.findIndex(n => n.id === editingNoteId);
+        if (idx !== -1) {
+          notes[idx] = normalizeNoteRecord({
+            id: notes[idx].id,
+            title,
+            pithy,
+            reference,
+            tags,
+            thoughts,
+            created: notes[idx].created
+          }, idx);
+        }
+        showToast(activeFileHandle ? `Updated & synced ${activeFileHandle.name}` : "Note updated");
+      } else {
+        const newNote = normalizeNoteRecord({
+          id: `pithy-v2_7-${Date.now()}`,
+          title,
+          pithy,
+          reference,
+          tags,
+          thoughts,
+          created: Date.now()
+        });
+        notes.unshift(newNote);
+        activeFocusId = newNote.id;
+        intakeInput.value = '';
+        setPdfAttachment(null);
+        updateUrlBadge();
+        showToast(activeFileHandle ? `Affixed & synced ${activeFileHandle.name}` : "Pithy note affixed & networked");
+      }
+
+      await saveStore(false);
+      closeReviewModal();
+      computeOrbitRelationships();
+      if (currentView === 'feed') renderFeed();
+    });
+
+    modalDeleteBtn.addEventListener('click', async () => {
+      if (!editingNoteId) return;
+      notes = notes.filter(n => n.id !== editingNoteId);
+      if (activeFocusId === editingNoteId) {
+        activeFocusId = notes.length ? notes[0].id : null;
+      }
+      await saveStore(false);
+      closeReviewModal();
+      computeOrbitRelationships();
+      if (currentView === 'feed') renderFeed();
+      showToast(activeFileHandle ? `Deleted & synced ${activeFileHandle.name}` : "Note removed from repository");
+    });
+
+    document.getElementById('manual-note-btn').addEventListener('click', () => {
+      openReviewModal({
+        title: "",
+        pithy: "",
+        reference: "",
+        tags: [],
+        thoughts: ""
+      });
+    });
+
+    function openEditModal(id) {
+      const n = notes.find(item => item.id === id);
+      if (n) openReviewModal(n, true);
+    }
+
+    // --- 10. FEED / LIST VIEW ---
+    const feedList = document.getElementById('feed-list');
+
+    function renderFeedTagChips() {
+      const allTags = [...new Set(notes.flatMap(n => n.tags || []))].sort();
+      feedTagChips.innerHTML = '';
+
+      if (!allTags.length) return;
+
+      const allBtn = document.createElement('button');
+      allBtn.type = 'button';
+      allBtn.className = !feedActiveTag
+        ? 'px-2 py-0.5 rounded-full bg-amber-500 text-black font-bold text-[10px] flex-shrink-0 transition-colors'
+        : 'px-2 py-0.5 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[10px] flex-shrink-0 transition-colors';
+      allBtn.innerText = `All (${notes.length})`;
+      allBtn.addEventListener('click', () => {
+        feedActiveTag = '';
+        renderFeed();
+      });
+      feedTagChips.appendChild(allBtn);
+
+      allTags.forEach(tag => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        const isActive = feedActiveTag === tag;
+        btn.className = isActive
+          ? 'px-2 py-0.5 rounded-full bg-amber-500 text-black font-bold text-[10px] font-mono flex-shrink-0 transition-colors'
+          : 'px-2 py-0.5 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-amber-300 text-[10px] font-mono flex-shrink-0 transition-colors';
+        btn.innerText = `#${tag}`;
+        btn.addEventListener('click', () => {
+          feedActiveTag = isActive ? '' : tag;
+          renderFeed();
+        });
+        feedTagChips.appendChild(btn);
+      });
+    }
+
+    function renderFeed() {
+      hideThoughtsTooltipImmediately();
+      renderFeedTagChips();
+      feedList.innerHTML = '';
+
+      let filtered = feedFilterQuery.trim()
+        ? rankNotesByQuery(feedFilterQuery).map(r => r.note)
+        : [...notes];
+
+      if (feedActiveTag) {
+        filtered = filtered.filter(n => (n.tags || []).includes(feedActiveTag));
+      }
+
+      if (!filtered.length) {
+        feedList.innerHTML = `<div class="text-center py-16 text-xs text-zinc-500">${notes.length ? 'No cards match your current search or tag filter.' : 'Repository is empty. Distill a note to begin.'}</div>`;
+        return;
+      }
+
+      filtered.forEach(n => {
+        const isCurrent = n.id === activeFocusId;
+        const hasThoughts = Boolean(n.thoughts && n.thoughts.trim());
+        const item = document.createElement('div');
+        item.className = `p-4 rounded-xl bg-brand-card border ${isCurrent ? 'border-amber-500/70' : 'border-brand-cardBorder'} transition-all cursor-pointer flex flex-col gap-2`;
+        item.title = "Click to focus • Click & hold to edit";
+        item.innerHTML = `
+          <div class="flex items-center justify-between gap-2">
+            <h3 class="text-sm font-bold text-zinc-100">${escapeHtml(n.title)}</h3>
+            <div class="flex items-center gap-1.5 flex-shrink-0">
+              ${hasThoughts ? `<button type="button" class="thoughts-trigger w-5 h-5 rounded-full bg-amber-500/15 hover:bg-amber-500/30 border border-amber-500/50 text-amber-300 font-mono font-bold text-[10px] inline-flex items-center justify-center transition-colors" aria-label="View My Thoughts">?</button>` : ''}
+              <span class="text-[10px] text-zinc-500 font-mono">${formatDate(n.created)}</span>
+            </div>
+          </div>
+          <div class="text-xs text-zinc-300 leading-relaxed space-y-1 font-serif select-text">
+            ${formatNumberedSentencesHtml(n.pithy)}
+          </div>
+          ${n.reference ? `<p class="text-[10px] text-zinc-400 italic font-sans flex items-center gap-1"><i class="ph ph-books text-amber-400 flex-shrink-0"></i> <span class="truncate">${formatReferenceHtml(n.reference)}</span></p>` : ''}
+          <div class="flex items-center justify-between pt-1">
+            <div class="flex flex-wrap gap-1">
+              ${(n.tags || []).map(t => `<button type="button" data-tag="${escapeHtml(t)}" class="feed-card-tag px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-amber-500/20 text-[9px] text-zinc-400 hover:text-amber-300 transition-colors">#${escapeHtml(t)}</button>`).join('')}
+            </div>
+            <div class="flex items-center gap-1">
+              <button type="button" class="copy-text-btn text-zinc-400 hover:text-amber-400 p-1 transition-colors" title="Copy formatted text (title, numbered text, reference, #tags)">
+                <i class="ph ph-copy text-sm"></i>
+              </button>
+              <button type="button" class="feed-edit-btn text-zinc-400 hover:text-amber-400 p-1 transition-colors" data-id="${n.id}" title="Edit Note & My Thoughts">
+                <i class="ph ph-note-pencil text-sm"></i>
+              </button>
+            </div>
+          </div>
+        `;
+        bindThoughtsTrigger(item.querySelector('.thoughts-trigger'), n);
+        attachLongPress(item, () => openEditModal(n.id));
+        item.querySelectorAll('.feed-card-tag').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            feedActiveTag = feedActiveTag === btn.dataset.tag ? '' : btn.dataset.tag;
+            renderFeed();
+          });
+        });
+        item.querySelector('.copy-text-btn').addEventListener('click', async (e) => {
+          e.stopPropagation();
+          await copyNoteTextToClipboard(n);
+        });
+        item.addEventListener('click', (e) => {
+          if (e.target.closest('.feed-edit-btn') || e.target.closest('.copy-text-btn') || e.target.closest('.feed-card-tag') || e.target.closest('.thoughts-trigger') || e.target.closest('a')) return;
+          activeFocusId = n.id;
+          switchView('orbit');
+        });
+        item.querySelector('.feed-edit-btn').addEventListener('click', (e) => {
+          e.stopPropagation();
+          openEditModal(n.id);
+        });
+        feedList.appendChild(item);
+      });
+    }
+
+    // --- 11. LIVE FILE-SYNC LOAD, RECONNECT, SAVE & SETTINGS ---
+    const exportJsonBtn = document.getElementById('export-json-btn');
+    const importJsonBtn = document.getElementById('import-json-btn');
+    const reconnectFileBtn = document.getElementById('reconnect-file-btn');
+    const jsonFileInput = document.getElementById('json-file-input');
+
+    function downloadFallbackJson() {
+      const dataStr = serializeNotesForOutput(notes);
+      const blob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `pithy_notes_v2_7_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast("Downloaded repository JSON");
+    }
+
+    async function promptOpenJsonFile() {
+      if ('showOpenFilePicker' in window) {
+        try {
+          const [handle] = await window.showOpenFilePicker({
+            multiple: false,
+            types: [{
+              description: 'JSON Repository',
+              accept: { 'application/json': ['.json'] }
+            }]
+          });
+          await activateFileHandle(handle, true, false);
+        } catch (err) {
+          if (err.name !== 'AbortError') {
+            console.error(err);
+            showToast("Failed to open or parse JSON file");
+          }
+        }
+      } else {
+        jsonFileInput.value = null;
+        jsonFileInput.click();
+      }
+    }
+
+    reconnectFileBtn.addEventListener('click', async () => {
+      if (!pendingFileHandle) return;
+      try {
+        const perm = await pendingFileHandle.requestPermission({ mode: 'readwrite' });
+        if (perm === 'granted') {
+          const ok = await activateFileHandle(pendingFileHandle, true, false);
+          if (!ok) {
+            pendingFileHandle = null;
+            updateHeaderStatus();
+            await promptOpenJsonFile();
+          }
+        } else {
+          showToast("Permission denied; select file to re-link");
+          await promptOpenJsonFile();
+        }
+      } catch (err) {
+        console.error('Reconnect error:', err);
+        const msg = err.name === 'NotFoundError'
+          ? "File not found; select JSON file to re-link"
+          : "Browser blocked reconnect; select JSON file to re-link";
+        showToast(msg);
+        pendingFileHandle = null;
+        updateHeaderStatus();
+        await promptOpenJsonFile();
+      }
+    });
+
+    exportJsonBtn.addEventListener('click', async () => {
+      if (activeFileHandle) {
+        await writeToLinkedFile(true);
+        return;
+      }
+
+      if ('showSaveFilePicker' in window) {
+        try {
+          const handle = await window.showSaveFilePicker({
+            suggestedName: 'pithy_notes_v2_7.json',
+            types: [{
+              description: 'JSON Repository',
+              accept: { 'application/json': ['.json'] }
+            }]
+          });
+
+          try {
+            const existingFile = await handle.getFile();
+            const existingText = await existingFile.text();
+            if (existingText.trim()) {
+              const parsed = JSON.parse(existingText);
+              if (Array.isArray(parsed) && parsed.length > 0 && !isSeedOnlyRepo(notes)) {
+                const { records: cleanExisting } = inspectImportedArray(parsed);
+                const choice = await promptMergeOrReplace(handle.name, notes.length, cleanExisting.length);
+                if (choice === 'cancel') return;
+                if (choice === 'merge') {
+                  notes = mergeNoteArrays(notes, cleanExisting);
+                  VectorEngine.invalidate();
+                  localStorage.setItem(STORAGE_REPO_KEY, serializeNotesForOutput(notes));
+                  computeOrbitRelationships();
+                  if (currentView === 'feed') renderFeed();
+                } else if (choice === 'replace') {
+                  notes = cleanExisting;
+                  VectorEngine.invalidate();
+                  localStorage.setItem(STORAGE_REPO_KEY, serializeNotesForOutput(notes));
+                  computeOrbitRelationships();
+                  if (currentView === 'feed') renderFeed();
+                }
+              }
+            }
+          } catch (_) {
+            // New empty file or non-JSON; safe to write directly
+          }
+
+          activeFileHandle = handle;
+          pendingFileHandle = null;
+          await persistFileHandle(handle);
+          await writeToLinkedFile(true);
+        } catch (err) {
+          if (err.name !== 'AbortError') {
+            console.error(err);
+            downloadFallbackJson();
+          }
+        }
+      } else {
+        downloadFallbackJson();
+      }
+    });
+
+    importJsonBtn.addEventListener('click', promptOpenJsonFile);
+
+    jsonFileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = async (evt) => {
+        try {
+          const parsed = JSON.parse(evt.target.result);
+          if (Array.isArray(parsed)) {
+            const { records: incoming, strippedCount } = inspectImportedArray(parsed);
+            if (!isSeedOnlyRepo(notes)) {
+              const choice = await promptMergeOrReplace(file.name, notes.length, incoming.length);
+              if (choice === 'cancel') return;
+              notes = choice === 'merge' ? mergeNoteArrays(notes, incoming) : incoming;
+            } else {
+              notes = incoming;
+            }
+            VectorEngine.invalidate();
+            activeFocusId = notes.length ? notes[0].id : null;
+            localStorage.setItem(STORAGE_REPO_KEY, serializeNotesForOutput(notes));
+            updateHeaderStatus();
+            computeOrbitRelationships();
+            if (currentView === 'feed') renderFeed();
+            showToast(strippedCount > 0
+              ? `Loaded ${notes.length} notes (removed extraneous fields)`
+              : `Loaded ${notes.length} notes`);
+          }
+        } catch (err) {
+          showToast("Failed to parse JSON file");
+        }
+      };
+      reader.readAsText(file);
+    });
+
+    const apiKeyBtn = document.getElementById('api-key-btn');
+    const keyModal = document.getElementById('key-modal');
+    const apiKeyInput = document.getElementById('api-key-input');
+    const keyCancelBtn = document.getElementById('key-cancel-btn');
+    const keySaveBtn = document.getElementById('key-save-btn');
+
+    function closeKeyModal() {
+      keyModal.classList.add('hidden');
+      keyModal.classList.remove('flex');
+    }
+
+    apiKeyBtn.addEventListener('click', () => {
+      apiKeyInput.value = apiKey;
+      keyModal.classList.remove('hidden');
+      keyModal.classList.add('flex');
+    });
+
+    keyCancelBtn.addEventListener('click', closeKeyModal);
+    keyModal.addEventListener('click', (e) => {
+      if (e.target === keyModal) closeKeyModal();
+    });
+
+    keySaveBtn.addEventListener('click', () => {
+      apiKey = apiKeyInput.value.trim();
+      localStorage.setItem(STORAGE_API_KEY, apiKey);
+      closeKeyModal();
+      updateApiKeyUI();
+      showToast(apiKey ? "API Key saved" : "API Key cleared");
+    });
+
+    // --- UTILITIES ---
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      document.getElementById('toast-text').innerText = msg;
+      t.classList.remove('opacity-0');
+      setTimeout(() => t.classList.add('opacity-0'), 2800);
+    }
+
+    function formatDate(ts) {
+      if (!ts) return '';
+      return new Date(ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    function formatReferenceHtml(refStr) {
+      if (!refStr) return '';
+      const urlRegex = /(https?:\/\/[^\s<>"')]+)/gi;
+      return refStr.split(urlRegex).map(part => {
+        if (/^https?:\/\//i.test(part)) {
+          const safeUrl = escapeHtml(part);
+          return `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="ref-link text-amber-400 hover:text-amber-300 underline decoration-amber-500/50 hover:decoration-amber-300 transition-colors" onclick="event.stopPropagation()">${safeUrl}</a>`;
+        }
+        return escapeHtml(part);
+      }).join('');
+    }
+
+    // --- 12. STARTUP ---
+    window.addEventListener('DOMContentLoaded', async () => {
+      if (navigator.storage && navigator.storage.persist) {
+        navigator.storage.persist();
+      }
+      await initStore();
+      resizeOrbitCanvas();
+      computeOrbitRelationships();
+      requestAnimationFrame(animateOrbit);
+    });
+  </script>
+</body>
+</html>
